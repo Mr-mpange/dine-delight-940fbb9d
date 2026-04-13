@@ -1,0 +1,244 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+import {
+  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink,
+} from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+
+type Tab = 'restaurants' | 'analytics' | 'users';
+
+export default function SuperAdminDashboard() {
+  const { user, signOut, userRole } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>('restaurants');
+  const [showAdd, setShowAdd] = useState(false);
+  const [newRestaurant, setNewRestaurant] = useState({ name: '', slug: '', description: '', phone: '', address: '' });
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  if (!user || userRole !== 'super_admin') {
+    navigate('/auth');
+    return null;
+  }
+
+  const tabs = [
+    { id: 'restaurants' as Tab, label: 'Restaurants', icon: Store },
+    { id: 'analytics' as Tab, label: 'Analytics', icon: BarChart3 },
+    { id: 'users' as Tab, label: 'Users', icon: Users },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <Shield className="w-6 h-6 text-primary" />
+          <h1 className="font-heading font-bold text-lg">Platform Admin</h1>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>My Restaurant</Button>
+          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-5 h-5" /></Button>
+        </div>
+      </div>
+
+      <div className="flex border-b border-border bg-card">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-body font-medium transition-all ${
+              activeTab === tab.id
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 max-w-4xl mx-auto">
+        {activeTab === 'restaurants' && <RestaurantsPanel />}
+        {activeTab === 'analytics' && <PlatformAnalytics />}
+        {activeTab === 'users' && <UsersPanel />}
+      </div>
+    </div>
+  );
+}
+
+function RestaurantsPanel() {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ name: '', slug: '', description: '', phone: '', address: '' });
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: restaurants } = useQuery({
+    queryKey: ['all-restaurants'],
+    queryFn: async () => {
+      const { data } = await supabase.from('restaurants').select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  const createRestaurant = async () => {
+    if (!form.name.trim() || !form.slug.trim()) return;
+    const { error } = await supabase.from('restaurants').insert({
+      name: form.name,
+      slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+      description: form.description || null,
+      phone: form.phone || null,
+      address: form.address || null,
+    });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setForm({ name: '', slug: '', description: '', phone: '', address: '' });
+    setShowAdd(false);
+    queryClient.invalidateQueries({ queryKey: ['all-restaurants'] });
+    toast({ title: 'Restaurant created!' });
+  };
+
+  const deleteRestaurant = async (id: string) => {
+    await supabase.from('restaurants').delete().eq('id', id);
+    queryClient.invalidateQueries({ queryKey: ['all-restaurants'] });
+    toast({ title: 'Restaurant deleted' });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-heading font-semibold text-lg">All Restaurants ({restaurants?.length || 0})</h2>
+        <Button variant="hero" size="sm" onClick={() => setShowAdd(true)}>
+          <Plus className="w-4 h-4 mr-1" /> Add Restaurant
+        </Button>
+      </div>
+
+      {showAdd && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-xl p-4 border border-border space-y-3">
+          <Input placeholder="Restaurant Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl font-body" />
+          <Input placeholder="URL Slug (e.g., pizza-palace)" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} className="rounded-xl font-body" />
+          <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="rounded-xl font-body" />
+          <Input placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="rounded-xl font-body" />
+          <Input placeholder="Address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="rounded-xl font-body" />
+          <div className="flex gap-2">
+            <Button variant="hero" onClick={createRestaurant}>Create</Button>
+            <Button variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+          </div>
+        </motion.div>
+      )}
+
+      {restaurants?.map((r, i) => (
+        <motion.div
+          key={r.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.05 }}
+          className="bg-card rounded-xl p-4 border border-border shadow-warm"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-heading font-semibold">{r.name}</h3>
+              <p className="text-sm text-muted-foreground font-body">{r.address || 'No address'}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge className={r.is_active ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}>
+                  {r.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+                <span className="text-xs text-muted-foreground font-body">/{r.slug}</span>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                <Link to={`/r/${r.slug}`} target="_blank"><ExternalLink className="w-4 h-4" /></Link>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteRestaurant(r.id)}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function PlatformAnalytics() {
+  const { data: orders } = useQuery({
+    queryKey: ['platform-orders'],
+    queryFn: async () => {
+      const { data } = await supabase.from('orders').select('*');
+      return data || [];
+    },
+  });
+
+  const { data: restaurants } = useQuery({
+    queryKey: ['all-restaurants'],
+    queryFn: async () => {
+      const { data } = await supabase.from('restaurants').select('*');
+      return data || [];
+    },
+  });
+
+  const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) || 0;
+  const totalCommission = orders?.reduce((sum, o) => sum + Number(o.commission), 0) || 0;
+
+  const stats = [
+    { label: 'Total Restaurants', value: restaurants?.length || 0 },
+    { label: 'Total Orders', value: orders?.length || 0 },
+    { label: 'Platform Revenue', value: `TZS ${totalRevenue.toLocaleString()}` },
+    { label: 'Commission Earned', value: `TZS ${totalCommission.toLocaleString()}` },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-heading font-semibold text-lg">Platform Analytics</h2>
+      <div className="grid grid-cols-2 gap-3">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="bg-card rounded-xl p-4 border border-border shadow-warm"
+          >
+            <p className="text-2xl font-heading font-bold">{stat.value}</p>
+            <p className="text-sm text-muted-foreground font-body">{stat.label}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UsersPanel() {
+  const { data: roles } = useQuery({
+    queryKey: ['user-roles-admin'],
+    queryFn: async () => {
+      const { data } = await supabase.from('user_roles').select('*');
+      return data || [];
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-heading font-semibold text-lg">Users & Roles</h2>
+      {roles?.map(role => (
+        <div key={role.id} className="bg-card rounded-xl p-3 border border-border flex items-center justify-between">
+          <span className="font-body text-sm truncate">{role.user_id}</span>
+          <Badge className="bg-primary/10 text-primary border-primary/20">{role.role}</Badge>
+        </div>
+      ))}
+      {(!roles || roles.length === 0) && (
+        <p className="text-center text-muted-foreground font-body py-8">No users found</p>
+      )}
+    </div>
+  );
+}
