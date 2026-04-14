@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, ShoppingCart, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
-import { Badge } from '@/components/ui/badge';
+import '@/styles/flipbook.css';
 
 interface MenuItem {
   id: string;
@@ -27,93 +27,88 @@ interface FlipBookMenuProps {
 
 export default function FlipBookMenu({ categories, restaurantName }: FlipBookMenuProps) {
   const [currentSpread, setCurrentSpread] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipState, setFlipState] = useState<'idle' | 'flipping-forward' | 'flipping-back'>('idle');
   const { dispatch, totalItems } = useCart();
 
-  // Build all pages as pairs (left + right) like a real book
+  // Build pages
   const allPages: { category: string; items: MenuItem[] }[] = [];
-
   categories.forEach(cat => {
     const items = cat.items.filter(i => i.is_available);
     for (let i = 0; i < items.length; i += 3) {
-      allPages.push({
-        category: cat.name,
-        items: items.slice(i, i + 3),
-      });
+      allPages.push({ category: cat.name, items: items.slice(i, i + 3) });
     }
   });
 
-  // Group into spreads (pairs of pages)
+  // Spreads: cover + pairs
   const spreads: { left: typeof allPages[0] | null; right: typeof allPages[0] | null }[] = [];
-  // First spread: cover (left) + first page (right)
   spreads.push({ left: null, right: allPages[0] || null });
   for (let i = 1; i < allPages.length; i += 2) {
-    spreads.push({
-      left: allPages[i] || null,
-      right: allPages[i + 1] || null,
-    });
+    spreads.push({ left: allPages[i] || null, right: allPages[i + 1] || null });
   }
 
   const goNext = useCallback(() => {
-    if (currentSpread < spreads.length - 1 && !isFlipping) {
-      setIsFlipping(true);
-      setDirection(1);
-      setCurrentSpread(p => p + 1);
-      setTimeout(() => setIsFlipping(false), 600);
+    if (currentSpread < spreads.length - 1 && flipState === 'idle') {
+      setFlipState('flipping-forward');
+      setTimeout(() => {
+        setCurrentSpread(p => p + 1);
+        setFlipState('idle');
+      }, 700);
     }
-  }, [currentSpread, spreads.length, isFlipping]);
+  }, [currentSpread, spreads.length, flipState]);
 
   const goPrev = useCallback(() => {
-    if (currentSpread > 0 && !isFlipping) {
-      setIsFlipping(true);
-      setDirection(-1);
-      setCurrentSpread(p => p - 1);
-      setTimeout(() => setIsFlipping(false), 600);
+    if (currentSpread > 0 && flipState === 'idle') {
+      setFlipState('flipping-back');
+      setTimeout(() => {
+        setCurrentSpread(p => p - 1);
+        setFlipState('idle');
+      }, 700);
     }
-  }, [currentSpread, isFlipping]);
+  }, [currentSpread, flipState]);
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    if (info.offset.x < -60) goNext();
-    else if (info.offset.x > 60) goPrev();
+    if (info.offset.x < -50) goNext();
+    else if (info.offset.x > 50) goPrev();
   };
 
   const addToCart = (item: MenuItem) => {
     dispatch({
       type: 'ADD_ITEM',
-      payload: {
-        menuItemId: item.id,
-        name: item.name,
-        price: item.price,
-        imageUrl: item.image_url ?? undefined,
-      },
+      payload: { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.image_url ?? undefined },
     });
   };
 
   const jumpToCategory = (catName: string) => {
-    const idx = spreads.findIndex(
-      s => s.left?.category === catName || s.right?.category === catName
-    );
-    if (idx >= 0 && idx !== currentSpread) {
-      setDirection(idx > currentSpread ? 1 : -1);
-      setCurrentSpread(idx);
+    const idx = spreads.findIndex(s => s.left?.category === catName || s.right?.category === catName);
+    if (idx >= 0 && idx !== currentSpread && flipState === 'idle') {
+      if (idx > currentSpread) {
+        setFlipState('flipping-forward');
+      } else {
+        setFlipState('flipping-back');
+      }
+      setTimeout(() => {
+        setCurrentSpread(idx);
+        setFlipState('idle');
+      }, 700);
     }
   };
 
   const spread = spreads[currentSpread];
+  const nextSpread = spreads[currentSpread + 1] || null;
+  const prevSpread = spreads[currentSpread - 1] || null;
   const activeCategory = spread?.left?.category || spread?.right?.category;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, hsl(30 20% 92%), hsl(25 15% 88%))' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(170deg, #f5ebe0 0%, #d5c4a1 50%, #e6d5c3 100%)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-card/90 backdrop-blur-md border-b border-border/50 sticky top-0 z-20">
+      <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-20" style={{ background: 'rgba(245,235,224,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-heading font-bold text-foreground">{restaurantName}</h2>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground font-body px-2 py-1 bg-secondary rounded-full">
-            {currentSpread + 1} / {spreads.length}
+          <span className="text-xs text-muted-foreground font-body bg-card/60 px-2 py-1 rounded-full border border-border/30">
+            Page {currentSpread + 1} of {spreads.length}
           </span>
           {totalItems > 0 && (
             <div className="relative">
@@ -127,15 +122,15 @@ export default function FlipBookMenu({ categories, restaurantName }: FlipBookMen
       </div>
 
       {/* Category Tabs */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar bg-card/40 backdrop-blur-sm">
-        {categories.map((cat) => (
+      <div className="flex gap-2 px-4 py-2 overflow-x-auto no-scrollbar">
+        {categories.map(cat => (
           <button
             key={cat.id}
             onClick={() => jumpToCategory(cat.name)}
             className={`px-4 py-1.5 rounded-full text-sm font-body whitespace-nowrap transition-all duration-300 ${
               activeCategory === cat.name
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
-                : 'bg-card text-muted-foreground hover:bg-secondary border border-border/50'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                : 'bg-card/70 text-muted-foreground hover:bg-card border border-border/40'
             }`}
           >
             {cat.name}
@@ -144,169 +139,133 @@ export default function FlipBookMenu({ categories, restaurantName }: FlipBookMen
       </div>
 
       {/* THE BOOK */}
-      <div className="flex-1 flex items-center justify-center px-3 py-6 overflow-hidden">
+      <div
+        className="flex-1 flex items-center justify-center px-2 py-4"
+        style={{ perspective: '1800px' }}
+      >
         <motion.div
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.15}
+          dragElastic={0.1}
           onDragEnd={handleDragEnd}
-          className="w-full max-w-4xl cursor-grab active:cursor-grabbing"
-          style={{ perspective: '2000px' }}
+          className="book-container cursor-grab active:cursor-grabbing"
         >
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={currentSpread}
-              custom={direction}
-              variants={{
-                enter: (dir: number) => ({
-                  rotateY: dir > 0 ? -15 : 15,
-                  opacity: 0,
-                  scale: 0.92,
-                }),
-                center: {
-                  rotateY: 0,
-                  opacity: 1,
-                  scale: 1,
-                },
-                exit: (dir: number) => ({
-                  rotateY: dir > 0 ? 15 : -15,
-                  opacity: 0,
-                  scale: 0.92,
-                }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-              style={{ transformStyle: 'preserve-3d' }}
-            >
-              {/* Book Binding */}
-              <div className="relative flex rounded-xl overflow-hidden"
-                style={{
-                  boxShadow: '0 25px 60px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05), inset 0 0 80px rgba(0,0,0,0.03)',
-                }}
-              >
-                {/* Spine shadow */}
-                <div className="absolute left-1/2 top-0 bottom-0 w-[6px] -translate-x-1/2 z-10"
-                  style={{
-                    background: 'linear-gradient(90deg, rgba(0,0,0,0.15), rgba(0,0,0,0.03), rgba(0,0,0,0.15))',
-                  }}
-                />
+          {/* Book base (always visible) */}
+          <div className="book-spread">
+            {/* LEFT PAGE (current) */}
+            <div className="book-page book-page-left">
+              <div className="page-texture" />
+              {currentSpread === 0 ? (
+                <CoverContent restaurantName={restaurantName} />
+              ) : spread.left ? (
+                <BookPage page={spread.left} onAdd={addToCart} side="left" />
+              ) : (
+                <EmptyPage />
+              )}
+            </div>
 
-                {/* Left Page */}
-                <div className="w-1/2 min-h-[420px] md:min-h-[500px] relative"
-                  style={{
-                    background: 'linear-gradient(135deg, hsl(35 30% 97%), hsl(30 20% 94%))',
-                    borderRight: '1px solid rgba(0,0,0,0.06)',
-                  }}
-                >
-                  {/* Paper texture overlay */}
-                  <div className="absolute inset-0 opacity-[0.03]"
-                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h40v40H0z\' fill=\'none\'/%3E%3Cpath d=\'M0 0h20v20H0zM20 20h20v20H20z\' fill=\'%23000\' fill-opacity=\'.03\'/%3E%3C/svg%3E")' }}
-                  />
+            {/* RIGHT PAGE (current) */}
+            <div className="book-page book-page-right">
+              <div className="page-texture" />
+              {spread.right ? (
+                <BookPage page={spread.right} onAdd={addToCart} side="right" />
+              ) : (
+                <EmptyPage isEnd />
+              )}
+            </div>
 
-                  {currentSpread === 0 ? (
-                    /* Cover Page */
-                    <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                        className="space-y-4"
-                      >
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-warm mx-auto flex items-center justify-center shadow-lg">
-                          <BookOpen className="w-8 h-8 md:w-10 md:h-10 text-primary-foreground" />
-                        </div>
-                        <h1 className="text-2xl md:text-4xl font-heading font-bold" style={{
-                          background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--gold)))',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                        }}>
-                          {restaurantName}
-                        </h1>
-                        <div className="w-16 h-[2px] mx-auto rounded-full" style={{
-                          background: 'linear-gradient(90deg, transparent, hsl(var(--primary)), transparent)',
-                        }} />
-                        <p className="text-muted-foreground font-body text-sm md:text-base italic">
-                          "Our Menu"
-                        </p>
-                        <p className="text-muted-foreground/50 font-body text-xs mt-4">
-                          ← Swipe to browse →
-                        </p>
-                      </motion.div>
+            {/* SPINE */}
+            <div className="book-spine" />
 
-                      {/* Decorative corner */}
-                      <div className="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-primary/20 rounded-tl-lg" />
-                      <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-primary/20 rounded-br-lg" />
-                    </div>
-                  ) : spread.left ? (
-                    <BookPage page={spread.left} onAdd={addToCart} side="left" />
-                  ) : (
-                    <EmptyPage />
-                  )}
-                </div>
-
-                {/* Right Page */}
-                <div className="w-1/2 min-h-[420px] md:min-h-[500px] relative"
-                  style={{
-                    background: 'linear-gradient(225deg, hsl(35 30% 97%), hsl(30 20% 95%))',
-                  }}
-                >
-                  <div className="absolute inset-0 opacity-[0.03]"
-                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h40v40H0z\' fill=\'none\'/%3E%3Cpath d=\'M0 0h20v20H0zM20 20h20v20H20z\' fill=\'%23000\' fill-opacity=\'.03\'/%3E%3C/svg%3E")' }}
-                  />
-
+            {/* FLIPPING PAGE (forward - right page folds left) */}
+            {flipState === 'flipping-forward' && (
+              <>
+                {/* Page front (what's currently showing on right, folds over) */}
+                <div className="flip-page flip-page-forward-front">
+                  <div className="page-texture" />
                   {spread.right ? (
                     <BookPage page={spread.right} onAdd={addToCart} side="right" />
-                  ) : (
-                    <EmptyPage isEnd />
-                  )}
+                  ) : <EmptyPage />}
                 </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+                {/* Page back (what will be on the left of next spread) */}
+                <div className="flip-page flip-page-forward-back">
+                  <div className="page-texture" />
+                  {nextSpread?.left ? (
+                    <BookPage page={nextSpread.left} onAdd={addToCart} side="left" />
+                  ) : <EmptyPage />}
+                </div>
+              </>
+            )}
+
+            {/* FLIPPING PAGE (backward - left page folds right) */}
+            {flipState === 'flipping-back' && (
+              <>
+                <div className="flip-page flip-page-back-front">
+                  <div className="page-texture" />
+                  {spread.left ? (
+                    <BookPage page={spread.left} onAdd={addToCart} side="left" />
+                  ) : currentSpread === 0 ? (
+                    <CoverContent restaurantName={restaurantName} />
+                  ) : <EmptyPage />}
+                </div>
+                <div className="flip-page flip-page-back-back">
+                  <div className="page-texture" />
+                  {prevSpread?.right ? (
+                    <BookPage page={prevSpread.right} onAdd={addToCart} side="right" />
+                  ) : <EmptyPage />}
+                </div>
+              </>
+            )}
+          </div>
         </motion.div>
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between px-6 py-4 bg-card/90 backdrop-blur-md border-t border-border/50">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={goPrev}
-          disabled={currentSpread === 0}
-          className="rounded-full w-10 h-10 hover:bg-primary/10"
-        >
+      <div className="flex items-center justify-between px-6 py-3" style={{ background: 'rgba(245,235,224,0.95)', borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+        <Button variant="ghost" size="icon" onClick={goPrev} disabled={currentSpread === 0 || flipState !== 'idle'} className="rounded-full w-10 h-10">
           <ChevronLeft className="w-5 h-5" />
         </Button>
-
-        <div className="flex gap-1.5 items-center">
+        <div className="flex gap-1.5">
           {spreads.map((_, i) => (
             <button
               key={i}
-              onClick={() => {
-                setDirection(i > currentSpread ? 1 : -1);
-                setCurrentSpread(i);
-              }}
+              onClick={() => jumpToCategory(spreads[i].left?.category || spreads[i].right?.category || '')}
               className={`rounded-full transition-all duration-300 ${
-                i === currentSpread
-                  ? 'bg-primary w-6 h-2.5'
-                  : 'bg-muted-foreground/20 w-2.5 h-2.5 hover:bg-muted-foreground/40'
+                i === currentSpread ? 'bg-primary w-6 h-2.5' : 'bg-foreground/15 w-2.5 h-2.5 hover:bg-foreground/25'
               }`}
             />
           ))}
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={goNext}
-          disabled={currentSpread === spreads.length - 1}
-          className="rounded-full w-10 h-10 hover:bg-primary/10"
-        >
+        <Button variant="ghost" size="icon" onClick={goNext} disabled={currentSpread === spreads.length - 1 || flipState !== 'idle'} className="rounded-full w-10 h-10">
           <ChevronRight className="w-5 h-5" />
         </Button>
       </div>
+    </div>
+  );
+}
+
+function CoverContent({ restaurantName }: { restaurantName: string }) {
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-4 text-center relative">
+      <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-primary/20 rounded-tl-md" />
+      <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-primary/20 rounded-tr-md" />
+      <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-primary/20 rounded-bl-md" />
+      <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-primary/20 rounded-br-md" />
+
+      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring' }} className="space-y-3">
+        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-warm mx-auto flex items-center justify-center shadow-lg">
+          <BookOpen className="w-7 h-7 md:w-8 md:h-8 text-primary-foreground" />
+        </div>
+        <h1 className="text-xl md:text-3xl font-heading font-bold" style={{
+          background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--gold)))',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        }}>
+          {restaurantName}
+        </h1>
+        <div className="w-12 h-[2px] mx-auto rounded-full bg-primary/30" />
+        <p className="text-muted-foreground font-body text-sm italic">Our Menu</p>
+        <p className="text-muted-foreground/40 font-body text-[11px] mt-3">Swipe or tap → to turn pages</p>
+      </motion.div>
     </div>
   );
 }
@@ -317,72 +276,39 @@ function BookPage({ page, onAdd, side }: {
   side: 'left' | 'right';
 }) {
   return (
-    <div className="h-full flex flex-col relative p-3 md:p-5">
-      {/* Category header */}
-      <div className={`mb-3 pb-2 border-b border-primary/10 ${side === 'right' ? 'text-right' : ''}`}>
-        <h3 className="text-xs md:text-sm font-heading font-bold text-primary uppercase tracking-[0.15em]">
+    <div className="h-full flex flex-col p-3 md:p-4 relative">
+      <div className={`mb-2 pb-1.5 border-b border-primary/15 ${side === 'right' ? 'text-right' : ''}`}>
+        <h3 className="text-[11px] md:text-xs font-heading font-bold text-primary uppercase tracking-[0.15em]">
           {page.category}
         </h3>
-        <div className={`w-8 h-[1.5px] bg-primary/30 mt-1 rounded-full ${side === 'right' ? 'ml-auto' : ''}`} />
       </div>
-
-      {/* Menu items */}
-      <div className="flex-1 flex flex-col gap-3">
+      <div className="flex-1 flex flex-col gap-2.5">
         {page.items.map((item, i) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="group"
-          >
-            <div className="flex gap-2 md:gap-3">
+          <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="group">
+            <div className="flex gap-2">
               {item.image_url && (
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md ring-1 ring-black/5">
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    loading="lazy"
-                    width={64}
-                    height={64}
-                  />
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-sm ring-1 ring-black/5">
+                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <h4 className="font-heading font-semibold text-xs md:text-sm text-foreground leading-tight">
-                  {item.name}
-                </h4>
+                <h4 className="font-heading font-semibold text-[11px] md:text-xs text-foreground leading-tight">{item.name}</h4>
                 {item.description && (
-                  <p className="text-[10px] md:text-xs text-muted-foreground font-body mt-0.5 line-clamp-2 leading-relaxed">
-                    {item.description}
-                  </p>
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground font-body mt-0.5 line-clamp-2">{item.description}</p>
                 )}
-                <div className="flex items-center justify-between mt-1.5 gap-1">
-                  <span className="font-body font-bold text-xs md:text-sm text-primary">
-                    TZS {item.price.toLocaleString()}
-                  </span>
-                  <button
-                    onClick={() => onAdd(item)}
-                    className="flex items-center gap-0.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-2 py-0.5 md:px-2.5 md:py-1 text-[10px] md:text-xs font-semibold transition-all duration-200 hover:scale-105 shadow-sm"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Add
+                <div className="flex items-center justify-between mt-1 gap-1">
+                  <span className="font-body font-bold text-[11px] md:text-xs text-primary">TZS {item.price.toLocaleString()}</span>
+                  <button onClick={() => onAdd(item)} className="flex items-center gap-0.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-2 py-0.5 text-[9px] md:text-[10px] font-semibold transition-all hover:scale-105 shadow-sm">
+                    <Plus className="w-2.5 h-2.5" /> Add
                   </button>
                 </div>
               </div>
             </div>
-
-            {/* Decorative separator */}
-            <div className="mt-2 h-[0.5px] bg-gradient-to-r from-transparent via-border to-transparent" />
+            <div className="mt-2 h-[0.5px] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
           </motion.div>
         ))}
       </div>
-
-      {/* Page number */}
-      <div className={`mt-2 text-[10px] text-muted-foreground/40 font-body italic ${side === 'right' ? 'text-right' : ''}`}>
-        — {page.category} —
-      </div>
+      <div className={`mt-1 text-[9px] text-muted-foreground/30 font-body italic ${side === 'right' ? 'text-right' : ''}`}>— {page.category} —</div>
     </div>
   );
 }
@@ -391,17 +317,12 @@ function EmptyPage({ isEnd = false }: { isEnd?: boolean }) {
   return (
     <div className="h-full flex items-center justify-center p-6 text-center">
       {isEnd ? (
-        <div className="space-y-3">
-          <p className="text-muted-foreground/60 font-body italic text-sm">
-            Thank you for browsing our menu
-          </p>
-          <div className="w-8 h-[1.5px] bg-primary/20 mx-auto rounded-full" />
-          <p className="text-muted-foreground/40 font-body text-xs">
-            Tap items to add to cart
-          </p>
+        <div className="space-y-2">
+          <p className="text-muted-foreground/50 font-body italic text-xs">Thank you for browsing</p>
+          <div className="w-6 h-[1px] bg-primary/15 mx-auto" />
         </div>
       ) : (
-        <p className="text-muted-foreground/30 font-body italic text-xs">~</p>
+        <p className="text-muted-foreground/20 font-body italic text-xs">~</p>
       )}
     </div>
   );
