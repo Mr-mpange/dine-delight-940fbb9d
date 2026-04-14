@@ -29,8 +29,9 @@ export default function AuthPage() {
       }
     } catch (err: unknown) {
       toast({ title: 'Error', description: err instanceof Error ? err.message : 'Something went wrong', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
