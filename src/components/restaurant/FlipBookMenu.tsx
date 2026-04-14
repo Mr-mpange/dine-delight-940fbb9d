@@ -157,21 +157,26 @@ export default function FlipBookMenu({ categories, restaurantName }: FlipBookMen
             <motion.div
               key={currentSpread}
               custom={direction}
-              initial={(dir: number) => ({
-                rotateY: dir > 0 ? -15 : 15,
-                opacity: 0,
-                scale: 0.92,
-              })}
-              animate={{
-                rotateY: 0,
-                opacity: 1,
-                scale: 1,
+              variants={{
+                enter: (dir: number) => ({
+                  rotateY: dir > 0 ? -15 : 15,
+                  opacity: 0,
+                  scale: 0.92,
+                }),
+                center: {
+                  rotateY: 0,
+                  opacity: 1,
+                  scale: 1,
+                },
+                exit: (dir: number) => ({
+                  rotateY: dir > 0 ? 15 : -15,
+                  opacity: 0,
+                  scale: 0.92,
+                }),
               }}
-              exit={(dir: number) => ({
-                rotateY: dir > 0 ? 15 : -15,
-                opacity: 0,
-                scale: 0.92,
-              })}
+              initial="enter"
+              animate="center"
+              exit="exit"
               transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               style={{ transformStyle: 'preserve-3d' }}
             >
