@@ -9,8 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Plus, Pencil, Trash2, Clock, ChefHat, CheckCircle,
+  LogOut, Plus, Pencil, Trash2, Clock, ChefHat, CheckCircle, QrCode,
 } from 'lucide-react';
+import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
 
 type Tab = 'orders' | 'menu' | 'stats';
