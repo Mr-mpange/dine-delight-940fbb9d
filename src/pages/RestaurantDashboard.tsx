@@ -14,7 +14,7 @@ import {
 import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'orders' | 'menu' | 'stats';
+type Tab = 'orders' | 'menu' | 'qr' | 'stats';
 
 export default function RestaurantDashboard() {
   const { user, signOut, userRole } = useAuth();
@@ -42,6 +42,7 @@ export default function RestaurantDashboard() {
   const tabs = [
     { id: 'orders' as Tab, label: 'Orders', icon: ClipboardList },
     { id: 'menu' as Tab, label: 'Menu', icon: UtensilsCrossed },
+    { id: 'qr' as Tab, label: 'QR Code', icon: QrCode },
     { id: 'stats' as Tab, label: 'Stats', icon: BarChart3 },
   ];
 
@@ -86,6 +87,15 @@ export default function RestaurantDashboard() {
       <div className="p-4 max-w-4xl mx-auto">
         {activeTab === 'orders' && restaurant && <OrdersPanel restaurantId={restaurant.id} />}
         {activeTab === 'menu' && restaurant && <MenuPanel restaurantId={restaurant.id} />}
+        {activeTab === 'qr' && restaurant && (
+          <QRCodeCard
+            restaurantName={restaurant.name}
+            slug={restaurant.slug}
+            logoUrl={restaurant.logo_url}
+            address={restaurant.address}
+            phone={restaurant.phone}
+          />
+        )}
         {activeTab === 'stats' && restaurant && <StatsPanel restaurantId={restaurant.id} />}
       </div>
     </div>
