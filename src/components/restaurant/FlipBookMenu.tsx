@@ -113,12 +113,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   const activeCategory = allPages[Math.max(0, currentPage - 1)]?.category;
 
   return (
-    <motion.div
-      className="book-overlay"
-      initial={{ opacity: 0, scale: 0.9, y: 60 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-    >
+    <div className="book-overlay">
       {/* Header */}
       <div className="book-header">
         <div className="flex items-center gap-2">
@@ -283,6 +278,6 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
           Next <ChevronRight className="w-4 h-4 inline -mt-0.5" />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

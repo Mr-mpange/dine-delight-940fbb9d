@@ -63,12 +63,10 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="relative">
-      <FlipBookMenu
-        categories={categories || []}
-        restaurantName={restaurant.name}
-        coverImageUrl={restaurant.cover_image_url}
-      />
-    </div>
+    <FlipBookMenu
+      categories={categories || []}
+      restaurantName={restaurant.name}
+      coverImageUrl={restaurant.cover_image_url}
+    />
   );
 }
