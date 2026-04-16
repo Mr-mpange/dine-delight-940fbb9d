@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      kyc_applications: {
+        Row: {
+          address: string | null
+          business_license_number: string | null
+          business_reg_url: string | null
+          created_at: string
+          id: string
+          id_document_url: string | null
+          phone: string
+          rejection_reason: string | null
+          restaurant_name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tin_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          business_license_number?: string | null
+          business_reg_url?: string | null
+          created_at?: string
+          id?: string
+          id_document_url?: string | null
+          phone: string
+          rejection_reason?: string | null
+          restaurant_name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tin_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          business_license_number?: string | null
+          business_reg_url?: string | null
+          created_at?: string
+          id?: string
+          id_document_url?: string | null
+          phone?: string
+          rejection_reason?: string | null
+          restaurant_name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tin_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           created_at: string | null
@@ -159,7 +213,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           restaurant_id: string
+          section: string | null
           status: Database["public"]["Enums"]["order_status"] | null
+          table_number: string | null
           total: number
           updated_at: string | null
         }
@@ -173,7 +229,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           restaurant_id: string
+          section?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
+          table_number?: string | null
           total: number
           updated_at?: string | null
         }
@@ -187,7 +245,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           restaurant_id?: string
+          section?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
+          table_number?: string | null
           total?: number
           updated_at?: string | null
         }
