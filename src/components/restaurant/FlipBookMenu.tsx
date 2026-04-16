@@ -166,7 +166,7 @@ export default function FlipBookMenu({ categories, restaurantName }: FlipBookMen
   const shadowOpacity = Math.sin((flipAngle / 180) * Math.PI) * 0.4;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(170deg, #f5ebe0 0%, #d5c4a1 50%, #e6d5c3 100%)' }}>
+    <div className="min-h-screen flex flex-col overflow-y-auto" style={{ background: 'linear-gradient(170deg, #f5ebe0 0%, #d5c4a1 50%, #e6d5c3 100%)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-30" style={{ background: 'rgba(245,235,224,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
         <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export default function FlipBookMenu({ categories, restaurantName }: FlipBookMen
       </div>
 
       {/* THE BOOK */}
-      <div className="flex-1 flex items-center justify-center px-2 py-4" style={{ perspective: '1800px' }}>
+      <div className="flex items-center justify-center px-2 py-4" style={{ perspective: '1800px', minHeight: '60vw' }}>
         <div className="book-container" ref={bookRef}>
           <div
             className="book-spread"
