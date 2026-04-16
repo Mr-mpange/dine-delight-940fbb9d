@@ -1,34 +1,25 @@
-﻿import { useState, useCallback } from 'react';
-import { animate } from 'framer-motion';
+﻿import { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Link, useParams } from 'react-router-dom';
 import '@/styles/flipbook.css';
 
 interface MenuItem {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  image_url: string | null;
-  is_available: boolean;
+  id: string; name: string; description: string | null;
+  price: number; image_url: string | null; is_available: boolean;
 }
 interface MenuCategory { id: string; name: string; items: MenuItem[]; }
 interface FlipBookMenuProps {
-  categories: MenuCategory[];
-  restaurantName: string;
-  coverImageUrl?: string | null;
+  categories: MenuCategory[]; restaurantName: string; coverImageUrl?: string | null;
 }
 
 function PageContent({ page, restaurantName, coverImageUrl, onAdd }: {
   page: { type: 'cover' } | { type: 'items'; category: string; items: MenuItem[] };
-  restaurantName: string;
-  coverImageUrl?: string | null;
-  onAdd: (item: MenuItem) => void;
+  restaurantName: string; coverImageUrl?: string | null; onAdd: (item: MenuItem) => void;
 }) {
   if (page.type === 'cover') {
     return (
-      <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 'inherit' }}>
+      <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
         {coverImageUrl
           ? <img src={coverImageUrl} alt={restaurantName} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(160deg,#6b2d0e,#1a0a04)' }} />
@@ -42,7 +33,7 @@ function PageContent({ page, restaurantName, coverImageUrl, onAdd }: {
   }
   const heroImg = page.items.find(i => i.image_url)?.image_url;
   return (
-    <div style={{ width: '100%', height: '100%', background: '#faf6f0', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 'inherit' }}>
+    <div style={{ width: '100%', height: '100%', background: '#faf6f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {heroImg ? (
         <div style={{ position: 'relative', height: 120, flexShrink: 0 }}>
           <img src={heroImg} alt={page.category} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -80,15 +71,21 @@ function PageContent({ page, restaurantName, coverImageUrl, onAdd }: {
   );
 }
 
+// easing: ease-in-out cubic
+function easeInOut(t: number) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
 export default function FlipBookMenu({ categories, restaurantName, coverImageUrl }: FlipBookMenuProps) {
   const { dispatch, totalItems } = useCart();
   const { slug } = useParams<{ slug: string }>();
   const [current, setCurrent] = useState(0);
   const [flipping, setFlipping] = useState(false);
-  // rotateY value driven imperatively
-  const [rotateY, setRotateY] = useState(0);
+  const [angle, setAngle] = useState(0);          // current rotateY in degrees
   const [flipDir, setFlipDir] = useState<'next'|'prev'>('next');
-  const [nextPage, setNextPage] = useState(0);
+  const [fromPage, setFromPage] = useState(0);
+  const [toPage, setToPage] = useState(0);
+  const rafRef = useRef<number | null>(null);
 
   const pages: Array<{ type: 'cover' } | { type: 'items'; category: string; items: MenuItem[] }> = [{ type: 'cover' }];
   categories.forEach(cat => {
@@ -96,7 +93,6 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     for (let i = 0; i < items.length; i += 2)
       pages.push({ type: 'items', category: cat.name, items: items.slice(i, i + 2) });
   });
-
   const total = pages.length;
 
   const go = useCallback((dir: 'next' | 'prev') => {
@@ -105,32 +101,43 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     if (target < 0 || target >= total) return;
 
     setFlipDir(dir);
-    setNextPage(target);
+    setFromPage(current);
+    setToPage(target);
+    setAngle(0);
     setFlipping(true);
-    setRotateY(0);
 
-    // Animate rotateY from 0 → -180 (next) or 0 → 180 (prev)
+    const duration = 650; // ms
+    const startTime = performance.now();
     const endAngle = dir === 'next' ? -180 : 180;
-    animate(0, endAngle, {
-      duration: 0.65,
-      ease: [0.645, 0.045, 0.355, 1.0],
-      onUpdate: v => setRotateY(v),
-      onComplete: () => {
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const easedAngle = easeInOut(t) * endAngle;
+      setAngle(easedAngle);
+
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        setAngle(0);
         setCurrent(target);
-        setRotateY(0);
         setFlipping(false);
-      },
-    });
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
   }, [flipping, current, total]);
+
+  // cleanup on unmount
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
 
   const addToCart = (item: MenuItem) =>
     dispatch({ type: 'ADD_ITEM', payload: { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.image_url ?? undefined } });
 
   const activeCat = pages[current].type === 'items' ? (pages[current] as { category: string }).category : null;
-  const flipOrigin = flipDir === 'next' ? 'left center' : 'right center';
-  // Show back face when past 90 degrees
-  const absAngle = Math.abs(rotateY);
-  const showBack = absAngle > 90;
+  const absAngle = Math.abs(angle);
+  const showBack = absAngle >= 90;
+  const shadowOpacity = Math.sin((absAngle / 180) * Math.PI) * 0.5;
+  const origin = flipDir === 'next' ? 'left center' : 'right center';
 
   return (
     <div className="fb-overlay">
@@ -150,7 +157,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       {/* Tabs */}
       <div className="fb-tabs">
         {categories.map(cat => {
-          const idx = pages.findIndex(p => p.type === 'items' && (p as {category:string}).category === cat.name);
+          const idx = pages.findIndex(p => p.type === 'items' && (p as { category: string }).category === cat.name);
           return (
             <button key={cat.id} onClick={() => !flipping && idx >= 0 && setCurrent(idx)}
               className={`fb-tab ${activeCat === cat.name ? 'fb-tab-active' : ''}`}>
@@ -162,62 +169,62 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
 
       {/* Stage */}
       <div className="fb-stage">
-        {/* Perspective wrapper — must be separate from the rotating element */}
-        <div style={{ perspective: '1200px', width: '100%', maxWidth: 400, height: '100%', maxHeight: 580 }}>
-          <div className="fb-book">
+        {/* perspective on a wrapper, NOT on the rotating element */}
+        <div style={{ perspective: '1200px', width: '100%', maxWidth: 400, height: '100%', maxHeight: 580, position: 'relative' }}>
 
-            {/* Layer 1: destination page (shown behind the flipping page) */}
-            {flipping && (
-              <div style={{ position: 'absolute', inset: 0, borderRadius: '4px 12px 12px 4px', overflow: 'hidden', zIndex: 1 }}>
-                <PageContent page={pages[nextPage]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
-              </div>
-            )}
+          {/* ── Layer 1 (bottom): destination page ── */}
+          {flipping && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1, borderRadius: '4px 12px 12px 4px', overflow: 'hidden' }}>
+              <PageContent page={pages[toPage]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
+            </div>
+          )}
 
-            {/* Layer 2: current page (static, shown when not flipping) */}
-            {!flipping && (
-              <div style={{ position: 'absolute', inset: 0, borderRadius: '4px 12px 12px 4px', overflow: 'hidden', zIndex: 2 }}>
-                <PageContent page={pages[current]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
-              </div>
-            )}
+          {/* ── Layer 2 (middle): static current page when idle ── */}
+          {!flipping && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 2, borderRadius: '4px 12px 12px 4px', overflow: 'hidden', boxShadow: '-4px 0 18px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.7)' }}>
+              <PageContent page={pages[current]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
+            </div>
+          )}
 
-            {/* Layer 3: the flipping page */}
-            {flipping && (
+          {/* ── Layer 3 (top): the flipping page ── */}
+          {flipping && (
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 3,
+              transformOrigin: origin,
+              transform: `rotateY(${angle}deg)`,
+              transformStyle: 'preserve-3d',
+              boxShadow: `-4px 0 18px rgba(0,0,0,${0.3 + shadowOpacity * 0.4})`,
+            }}>
+              {/* FRONT face */}
               <div style={{
-                position: 'absolute', inset: 0, zIndex: 3,
-                transformOrigin: flipOrigin,
-                transform: `rotateY(${rotateY}deg)`,
-                transformStyle: 'preserve-3d',
+                position: 'absolute', inset: 0,
+                borderRadius: '4px 12px 12px 4px', overflow: 'hidden',
+                backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+                visibility: showBack ? 'hidden' : 'visible',
               }}>
-                {/* Front face */}
+                <PageContent page={pages[fromPage]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
+                {/* shadow sweep */}
                 <div style={{
-                  position: 'absolute', inset: 0,
-                  borderRadius: '4px 12px 12px 4px', overflow: 'hidden',
-                  backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-                  opacity: showBack ? 0 : 1,
-                }}>
-                  <PageContent page={pages[current]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
-                  {/* Sweep shadow */}
-                  <div style={{
-                    position: 'absolute', inset: 0, pointerEvents: 'none',
-                    background: `linear-gradient(to ${flipDir === 'next' ? 'left' : 'right'}, transparent 40%, rgba(0,0,0,${Math.sin((absAngle / 180) * Math.PI) * 0.4}) 100%)`,
-                  }} />
-                </div>
-                {/* Back face */}
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  borderRadius: '4px 12px 12px 4px', overflow: 'hidden',
-                  backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)',
-                  opacity: showBack ? 1 : 0,
-                }}>
-                  <PageContent page={pages[nextPage]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
-                </div>
+                  position: 'absolute', inset: 0, pointerEvents: 'none',
+                  background: `linear-gradient(to ${flipDir === 'next' ? 'left' : 'right'}, transparent 30%, rgba(0,0,0,${shadowOpacity}) 100%)`,
+                }} />
               </div>
-            )}
 
-            {/* Spine */}
-            <div className="fb-spine" />
-          </div>
+              {/* BACK face */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                borderRadius: '4px 12px 12px 4px', overflow: 'hidden',
+                backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                visibility: showBack ? 'visible' : 'hidden',
+              }}>
+                <PageContent page={pages[toPage]} restaurantName={restaurantName} coverImageUrl={coverImageUrl} onAdd={addToCart} />
+              </div>
+            </div>
+          )}
+
+          {/* Spine */}
+          <div className="fb-spine" />
         </div>
       </div>
 
