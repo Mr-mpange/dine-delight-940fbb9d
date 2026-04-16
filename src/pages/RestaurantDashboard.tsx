@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Plus, Pencil, Trash2, Clock, ChefHat, CheckCircle, QrCode,
+  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode,
 } from 'lucide-react';
 import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
@@ -17,11 +17,22 @@ import { useNavigate } from 'react-router-dom';
 type Tab = 'orders' | 'menu' | 'qr' | 'stats';
 
 export default function RestaurantDashboard() {
-  const { user, signOut, userRole } = useAuth();
+  const { user, signOut, userRole, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('orders');
   const navigate = useNavigate();
 
-  const { data: restaurant } = useQuery({
+  // Redirect based on role
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth', { replace: true });
+    } else if (!loading && userRole === 'super_admin') {
+      navigate('/super-admin', { replace: true });
+    } else if (!loading && userRole === 'customer') {
+      navigate('/', { replace: true });
+    }
+  }, [user, userRole, loading, navigate]);
+
+  const { data: restaurant, isLoading: restaurantLoading } = useQuery({
     queryKey: ['my-restaurant', user?.id],
     queryFn: async () => {
       const { data } = await supabase
@@ -31,12 +42,26 @@ export default function RestaurantDashboard() {
         .single();
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && userRole === 'restaurant_admin',
   });
 
-  if (!user) {
-    navigate('/auth');
-    return null;
+  if (loading || restaurantLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground font-body">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (!restaurant) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground font-body mb-4">No restaurant assigned to your account yet.</p>
+          <Button variant="ghost" onClick={signOut}>Sign Out</Button>
+        </div>
+      </div>
+    );
   }
 
   const tabs = [
@@ -52,18 +77,11 @@ export default function RestaurantDashboard() {
       <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <LayoutDashboard className="w-6 h-6 text-primary" />
-          <h1 className="font-heading font-bold text-lg truncate">{restaurant?.name || 'Dashboard'}</h1>
+          <h1 className="font-heading font-bold text-lg truncate">{restaurant.name}</h1>
         </div>
-        <div className="flex items-center gap-2">
-          {userRole === 'super_admin' && (
-            <Button variant="ghost" size="sm" onClick={() => navigate('/super-admin')}>
-              Platform
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={signOut}>
-            <LogOut className="w-5 h-5" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={signOut}>
+          <LogOut className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -85,9 +103,9 @@ export default function RestaurantDashboard() {
       </div>
 
       <div className="p-4 max-w-4xl mx-auto">
-        {activeTab === 'orders' && restaurant && <OrdersPanel restaurantId={restaurant.id} />}
-        {activeTab === 'menu' && restaurant && <MenuPanel restaurantId={restaurant.id} />}
-        {activeTab === 'qr' && restaurant && (
+        {activeTab === 'orders' && <OrdersPanel restaurantId={restaurant.id} />}
+        {activeTab === 'menu' && <MenuPanel restaurantId={restaurant.id} />}
+        {activeTab === 'qr' && (
           <QRCodeCard
             restaurantName={restaurant.name}
             slug={restaurant.slug}
@@ -96,7 +114,7 @@ export default function RestaurantDashboard() {
             phone={restaurant.phone}
           />
         )}
-        {activeTab === 'stats' && restaurant && <StatsPanel restaurantId={restaurant.id} />}
+        {activeTab === 'stats' && <StatsPanel restaurantId={restaurant.id} />}
       </div>
     </div>
   );
@@ -236,7 +254,11 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
 
   const addCategory = async () => {
     if (!newCatName.trim()) return;
-    await supabase.from('menu_categories').insert({ restaurant_id: restaurantId, name: newCatName });
+    const { error } = await supabase.from('menu_categories').insert({ restaurant_id: restaurantId, name: newCatName });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
     setNewCatName('');
     setShowAddCategory(false);
     queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
@@ -245,13 +267,17 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
 
   const addItem = async (categoryId: string) => {
     if (!newItem.name.trim() || !newItem.price) return;
-    await supabase.from('menu_items').insert({
+    const { error } = await supabase.from('menu_items').insert({
       restaurant_id: restaurantId,
       category_id: categoryId,
       name: newItem.name,
       price: parseFloat(newItem.price),
       description: newItem.description || null,
     });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
     setNewItem({ name: '', price: '', description: '' });
     setShowAddItem(null);
     queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
@@ -275,20 +301,32 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
       <div className="flex items-center justify-between">
         <h2 className="font-heading font-semibold text-lg">Menu Management</h2>
         <Button variant="hero" size="sm" onClick={() => setShowAddCategory(true)}>
-          <Plus className="w-4 h-4 mr-1" /> Category
+          <Plus className="w-4 h-4 mr-1" /> Add Category
         </Button>
       </div>
 
       {showAddCategory && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 bg-card p-3 rounded-xl border border-border">
           <Input
-            placeholder="Category name"
+            placeholder="Category name (e.g. Appetizers, Main Course)"
             value={newCatName}
             onChange={e => setNewCatName(e.target.value)}
             className="rounded-xl font-body"
+            onKeyDown={e => e.key === 'Enter' && addCategory()}
           />
           <Button variant="hero" onClick={addCategory}>Add</Button>
           <Button variant="ghost" onClick={() => setShowAddCategory(false)}>Cancel</Button>
+        </div>
+      )}
+
+      {(!categories || categories.length === 0) && !showAddCategory && (
+        <div className="text-center py-12 bg-card rounded-xl border border-border">
+          <UtensilsCrossed className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-30" />
+          <p className="text-muted-foreground font-body mb-3">No menu categories yet</p>
+          <p className="text-sm text-muted-foreground font-body mb-4">Start by adding a category like "Appetizers" or "Main Course", then add items to it.</p>
+          <Button variant="hero" onClick={() => setShowAddCategory(true)}>
+            <Plus className="w-4 h-4 mr-1" /> Create First Category
+          </Button>
         </div>
       )}
 
@@ -297,8 +335,8 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-heading font-semibold">{cat.name}</h3>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowAddItem(cat.id)}>
-                <Plus className="w-4 h-4" />
+              <Button variant="hero" size="sm" onClick={() => setShowAddItem(cat.id)}>
+                <Plus className="w-4 h-4 mr-1" /> Add Item
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteCategory(cat.id)}>
                 <Trash2 className="w-4 h-4" />
@@ -309,8 +347,8 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
           {showAddItem === cat.id && (
             <div className="mb-3 space-y-2 p-3 bg-secondary/30 rounded-lg">
               <Input placeholder="Item name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="rounded-xl font-body" />
-              <Input placeholder="Price" type="number" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className="rounded-xl font-body" />
-              <Input placeholder="Description" value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="rounded-xl font-body" />
+              <Input placeholder="Price (TZS)" type="number" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className="rounded-xl font-body" />
+              <Input placeholder="Description (optional)" value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="rounded-xl font-body" />
               <div className="flex gap-2">
                 <Button variant="hero" size="sm" onClick={() => addItem(cat.id)}>Add Item</Button>
                 <Button variant="ghost" size="sm" onClick={() => setShowAddItem(null)}>Cancel</Button>
@@ -335,6 +373,9 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
                 </div>
               </div>
             ))}
+            {cat.items.length === 0 && (
+              <p className="text-sm text-muted-foreground font-body py-2">No items yet. Click "Add Item" to add dishes to this category.</p>
+            )}
           </div>
         </div>
       ))}
