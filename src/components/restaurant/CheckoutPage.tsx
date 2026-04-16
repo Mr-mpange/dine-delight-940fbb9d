@@ -24,6 +24,8 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
   const { state, totalPrice, dispatch } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [section, setSection] = useState('');
+  const [tableNumber, setTableNumber] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('mpesa');
   const [step, setStep] = useState<'details' | 'processing' | 'success' | 'failed'>('details');
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -55,6 +57,8 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
           payment_method: paymentMethod,
           payment_status: 'paid',
           status: 'pending',
+          section: section || null,
+          table_number: tableNumber || null,
         })
         .select()
         .single();
@@ -153,6 +157,32 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
             placeholder="Phone Number (e.g., +255...)"
             value={phone}
             onChange={e => setPhone(e.target.value)}
+            className="rounded-xl h-12 font-body"
+          />
+        </motion.div>
+
+        {/* Table / Section */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="space-y-3">
+          <h3 className="font-heading font-semibold">Your Location</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {['Indoor', 'Outdoor', 'VIP'].map(s => (
+              <button
+                key={s}
+                onClick={() => setSection(s)}
+                className={`p-3 rounded-xl border-2 text-sm font-body font-semibold transition-all ${
+                  section === s
+                    ? 'border-primary bg-primary/5 shadow-warm'
+                    : 'border-border hover:border-primary/30'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <Input
+            placeholder="Table Number (e.g., 5)"
+            value={tableNumber}
+            onChange={e => setTableNumber(e.target.value)}
             className="rounded-xl h-12 font-body"
           />
         </motion.div>
