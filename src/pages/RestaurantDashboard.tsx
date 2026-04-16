@@ -55,11 +55,8 @@ export default function RestaurantDashboard() {
 
   if (!restaurant) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground font-body mb-4">No restaurant assigned to your account yet.</p>
-          <Button variant="ghost" onClick={signOut}>Sign Out</Button>
-        </div>
+      <div className="min-h-screen bg-background">
+        <CreateRestaurantPanel userId={user!.id} onSignOut={signOut} />
       </div>
     );
   }
