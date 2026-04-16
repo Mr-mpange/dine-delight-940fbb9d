@@ -12,6 +12,7 @@ import MenuPage from "./pages/MenuPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPageWrapper from "./pages/CheckoutPageWrapper";
 import TrackOrderPage from "./pages/TrackOrderPage";
+import KycApplicationPage from "./pages/KycApplicationPage";
 import AuthPage from "./pages/AuthPage";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/r/:slug/menu" element={<MenuPage />} />
               <Route path="/r/:slug/cart" element={<CartPage />} />
               <Route path="/r/:slug/checkout" element={<CheckoutPageWrapper />} />
+              <Route path="/apply" element={<KycApplicationPage />} />
               <Route path="/r/:slug/track/:orderId" element={<TrackOrderPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode,
+  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode, Store, MapPin,
 } from 'lucide-react';
 import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
@@ -55,11 +55,8 @@ export default function RestaurantDashboard() {
 
   if (!restaurant) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground font-body mb-4">No restaurant assigned to your account yet.</p>
-          <Button variant="ghost" onClick={signOut}>Sign Out</Button>
-        </div>
+      <div className="min-h-screen bg-background">
+        <CreateRestaurantPanel userId={user!.id} onSignOut={signOut} />
       </div>
     );
   }
@@ -191,6 +188,14 @@ function OrdersPanel({ restaurantId }: { restaurantId: string }) {
             <div>
               <p className="font-body font-semibold">{order.customer_name}</p>
               <p className="text-sm text-muted-foreground font-body">{order.customer_phone}</p>
+              {(order.section || order.table_number) && (
+                <div className="flex items-center gap-1 mt-1">
+                  <MapPin className="w-3 h-3 text-primary" />
+                  <span className="text-xs font-body text-primary font-medium">
+                    {[order.section, order.table_number ? `Table ${order.table_number}` : ''].filter(Boolean).join(' · ')}
+                  </span>
+                </div>
+              )}
             </div>
             <Badge className={statusColors[order.status ?? 'pending']}>
               {order.status}
@@ -425,6 +430,64 @@ function StatsPanel({ restaurantId }: { restaurantId: string }) {
           </motion.div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CreateRestaurantPanel({ userId, onSignOut }: { userId: string; onSignOut: () => void }) {
+  const [form, setForm] = useState({ name: '', slug: '', description: '', phone: '', address: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleCreate = async () => {
+    if (!form.name.trim() || !form.slug.trim()) {
+      toast({ title: 'Please fill in restaurant name and slug', variant: 'destructive' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('restaurants').insert({
+        name: form.name,
+        slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+        description: form.description || null,
+        phone: form.phone || null,
+        address: form.address || null,
+        owner_id: userId,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['my-restaurant'] });
+      toast({ title: 'Restaurant created! 🎉' });
+      window.location.reload();
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to create', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-card rounded-2xl shadow-warm-lg p-8 border border-border">
+        <div className="text-center mb-6">
+          <Store className="w-12 h-12 text-primary mx-auto mb-3" />
+          <h1 className="text-2xl font-heading font-bold">Create Your Restaurant</h1>
+          <p className="text-sm text-muted-foreground font-body mt-1">Set up your restaurant profile to start receiving orders</p>
+        </div>
+        <div className="space-y-3">
+          <Input placeholder="Restaurant Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl h-12 font-body" />
+          <Input placeholder="URL Slug * (e.g. my-restaurant)" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} className="rounded-xl h-12 font-body" />
+          <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="rounded-xl h-12 font-body" />
+          <Input placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="rounded-xl h-12 font-body" />
+          <Input placeholder="Address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="rounded-xl h-12 font-body" />
+          <Button variant="hero" size="lg" className="w-full rounded-xl py-6" onClick={handleCreate} disabled={submitting}>
+            {submitting ? 'Creating...' : 'Create Restaurant'}
+          </Button>
+        </div>
+        <Button variant="ghost" className="w-full mt-3" onClick={onSignOut}>
+          <LogOut className="w-4 h-4 mr-2" /> Sign Out
+        </Button>
+      </motion.div>
     </div>
   );
 }

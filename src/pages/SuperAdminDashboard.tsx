@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
-  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink,
+  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink, FileCheck, CheckCircle, XCircle,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Textarea } from '@/components/ui/textarea';
 
-type Tab = 'restaurants' | 'analytics' | 'users';
+type Tab = 'restaurants' | 'kyc' | 'analytics' | 'users';
 
 export default function SuperAdminDashboard() {
   const { user, signOut, userRole } = useAuth();
@@ -30,6 +31,7 @@ export default function SuperAdminDashboard() {
 
   const tabs = [
     { id: 'restaurants' as Tab, label: 'Restaurants', icon: Store },
+    { id: 'kyc' as Tab, label: 'KYC', icon: FileCheck },
     { id: 'analytics' as Tab, label: 'Analytics', icon: BarChart3 },
     { id: 'users' as Tab, label: 'Users', icon: Users },
   ];
@@ -66,6 +68,7 @@ export default function SuperAdminDashboard() {
 
       <div className="p-4 max-w-4xl mx-auto">
         {activeTab === 'restaurants' && <RestaurantsPanel />}
+        {activeTab === 'kyc' && <KycPanel />}
         {activeTab === 'analytics' && <PlatformAnalytics />}
         {activeTab === 'users' && <UsersPanel />}
       </div>
@@ -238,6 +241,131 @@ function UsersPanel() {
       ))}
       {(!roles || roles.length === 0) && (
         <p className="text-center text-muted-foreground font-body py-8">No users found</p>
+      )}
+    </div>
+  );
+}
+
+function KycPanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [rejectionReason, setRejectionReason] = useState<Record<string, string>>({});
+
+  const { data: applications } = useQuery({
+    queryKey: ['kyc-applications'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('kyc_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  const handleApprove = async (app: { id: string; user_id: string; restaurant_name: string }) => {
+    try {
+      // Update KYC status
+      const { error: kycErr } = await supabase
+        .from('kyc_applications')
+        .update({ status: 'approved', reviewed_by: user!.id, reviewed_at: new Date().toISOString() })
+        .eq('id', app.id);
+      if (kycErr) throw kycErr;
+
+      // Update user role to restaurant_admin
+      const { error: roleErr } = await supabase
+        .from('user_roles')
+        .update({ role: 'restaurant_admin' })
+        .eq('user_id', app.user_id);
+      if (roleErr) throw roleErr;
+
+      queryClient.invalidateQueries({ queryKey: ['kyc-applications'] });
+      toast({ title: `Approved ${app.restaurant_name}!` });
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' });
+    }
+  };
+
+  const handleReject = async (app: { id: string; restaurant_name: string }) => {
+    try {
+      const { error } = await supabase
+        .from('kyc_applications')
+        .update({
+          status: 'rejected',
+          reviewed_by: user!.id,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: rejectionReason[app.id] || 'Application not approved',
+        })
+        .eq('id', app.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['kyc-applications'] });
+      toast({ title: `Rejected ${app.restaurant_name}` });
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' });
+    }
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: 'bg-warm-gold/10 text-warm-gold border-warm-gold/20',
+    approved: 'bg-accent/10 text-accent border-accent/20',
+    rejected: 'bg-destructive/10 text-destructive border-destructive/20',
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-heading font-semibold text-lg">KYC Applications</h2>
+      {applications?.map((app, i) => (
+        <motion.div
+          key={app.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.05 }}
+          className="bg-card rounded-xl p-4 border border-border shadow-warm space-y-3"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-heading font-semibold">{app.restaurant_name}</h3>
+              <p className="text-sm text-muted-foreground font-body">{app.phone}</p>
+              {app.address && <p className="text-xs text-muted-foreground font-body">{app.address}</p>}
+            </div>
+            <Badge className={statusColors[app.status] || statusColors.pending}>{app.status}</Badge>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs font-body text-muted-foreground">
+            {app.business_license_number && <p>License: {app.business_license_number}</p>}
+            {app.tin_number && <p>TIN: {app.tin_number}</p>}
+            {app.id_document_url && <a href={app.id_document_url} target="_blank" rel="noreferrer" className="text-primary underline">ID Document</a>}
+            {app.business_reg_url && <a href={app.business_reg_url} target="_blank" rel="noreferrer" className="text-primary underline">Business Reg</a>}
+          </div>
+
+          <p className="text-xs text-muted-foreground font-body">Applied: {new Date(app.created_at).toLocaleDateString()}</p>
+
+          {app.status === 'pending' && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Textarea
+                placeholder="Rejection reason (optional)"
+                value={rejectionReason[app.id] || ''}
+                onChange={e => setRejectionReason(prev => ({ ...prev, [app.id]: e.target.value }))}
+                className="rounded-xl font-body text-sm"
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <Button variant="hero" size="sm" className="flex-1" onClick={() => handleApprove(app)}>
+                  <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                </Button>
+                <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleReject(app)}>
+                  <XCircle className="w-4 h-4 mr-1" /> Reject
+                </Button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      ))}
+      {(!applications || applications.length === 0) && (
+        <div className="text-center py-12 text-muted-foreground font-body">
+          <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          No KYC applications yet
+        </div>
       )}
     </div>
   );
