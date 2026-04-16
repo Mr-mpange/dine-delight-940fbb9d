@@ -57,7 +57,6 @@
   justify-content: center;
   padding: 16px;
   background: radial-gradient(ellipse at center, #2c1a10 0%, #1a0f0a 70%);
-  perspective: 1400px;
 }
 
 .fb-book {
@@ -68,6 +67,8 @@
   max-height: 580px;
   border-radius: 4px 12px 12px 4px;
   box-shadow: -6px 0 20px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.7);
+  /* perspective must be on the direct parent of the rotating element */
+  perspective: 1400px;
   transform-style: preserve-3d;
 }
 
@@ -75,9 +76,12 @@
   position: absolute;
   inset: 0;
   border-radius: 4px 12px 12px 4px;
-  overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+.fb-page-static,
+.fb-page-behind {
+  overflow: hidden;
 }
 .fb-page-static { z-index: 1; }
 .fb-page-behind  { z-index: 2; }
@@ -85,7 +89,7 @@
 .fb-page-flip {
   z-index: 3;
   transform-style: preserve-3d;
-  overflow: visible;
+  /* no overflow:hidden here — it breaks 3D */
   border-radius: 0;
   background: transparent;
   inset: 0;
