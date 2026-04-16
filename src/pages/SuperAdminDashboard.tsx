@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
-  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink,
+  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink, FileCheck, CheckCircle, XCircle,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Textarea } from '@/components/ui/textarea';
 
-type Tab = 'restaurants' | 'analytics' | 'users';
+type Tab = 'restaurants' | 'kyc' | 'analytics' | 'users';
 
 export default function SuperAdminDashboard() {
   const { user, signOut, userRole } = useAuth();
@@ -30,6 +31,7 @@ export default function SuperAdminDashboard() {
 
   const tabs = [
     { id: 'restaurants' as Tab, label: 'Restaurants', icon: Store },
+    { id: 'kyc' as Tab, label: 'KYC', icon: FileCheck },
     { id: 'analytics' as Tab, label: 'Analytics', icon: BarChart3 },
     { id: 'users' as Tab, label: 'Users', icon: Users },
   ];
@@ -66,6 +68,7 @@ export default function SuperAdminDashboard() {
 
       <div className="p-4 max-w-4xl mx-auto">
         {activeTab === 'restaurants' && <RestaurantsPanel />}
+        {activeTab === 'kyc' && <KycPanel />}
         {activeTab === 'analytics' && <PlatformAnalytics />}
         {activeTab === 'users' && <UsersPanel />}
       </div>
