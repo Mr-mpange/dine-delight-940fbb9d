@@ -196,6 +196,7 @@ function OrdersPanel({ restaurantId }: { restaurantId: string }) {
                   </span>
                 </div>
               )}
+            </div>
             <Badge className={statusColors[order.status ?? 'pending']}>
               {order.status}
             </Badge>
