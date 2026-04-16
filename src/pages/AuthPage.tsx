@@ -24,7 +24,7 @@ export default function AuthPage() {
       } else if (userRole === 'restaurant_admin') {
         navigate('/admin', { replace: true });
       } else {
-        navigate('/', { replace: true });
+        navigate('/apply', { replace: true });
       }
     }
   }, [user, userRole, loading, navigate]);
