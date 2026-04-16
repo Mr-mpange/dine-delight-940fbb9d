@@ -35,21 +35,26 @@
 .fb-stage {
   flex: 1;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
   overflow: hidden;
-  padding: 0;
+  display: block;
+  position: relative;
 }
 
-/* Force PageFlip's own wrapper to fill the stage */
-.fb-stage > div,
-.fb-stage .stf__parent,
-.fb-stage .stf__wrapper {
+.fb-stage > div {
   width: 100% !important;
   height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
+}
+
+/* Force PageFlip internals to fill */
+.stf__parent {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 auto;
+}
+.stf__wrapper {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ── Nav ── */

@@ -39,8 +39,12 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   useEffect(() => {
     if (!bookRef.current) return;
 
-    // Build page HTML directly into the container — same pattern as the vanilla sample
     const container = bookRef.current;
+    // Measure the stage (parent) to get real available dimensions
+    const stage = container.parentElement!;
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+
     container.innerHTML = '';
 
     pages.forEach((page, idx) => {
@@ -109,23 +113,21 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       container.appendChild(div);
     });
 
-    // Init PageFlip — same config as the working vanilla sample
+    // portrait: one page = full width, two pages side by side = W
+    // We want each page to be W/2 wide (landscape spread) or W wide (portrait single)
+    // Use portrait mode: page width = W, height = H
     const pf = new PageFlip(container, {
-      width: 350,
-      height: 500,
-      size: 'stretch',
-      minWidth: 150,
-      maxWidth: 1400,
-      minHeight: 300,
-      maxHeight: 2000,
+      width: Math.floor(W / 2),   // single page width (PageFlip shows 2 side by side)
+      height: H,
+      size: 'fixed',
       drawShadow: true,
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
       swipeDistance: 30,
       showCover: true,
-      usePortrait: true,
+      usePortrait: false,         // landscape = 2 pages visible, fills full width
       mobileScrollSupport: true,
-      autoSize: true,
+      autoSize: false,
     });
 
     pf.loadFromHTML(container.querySelectorAll<HTMLElement>('.pf-page'));
@@ -159,7 +161,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
 
       {/* Book stage — PageFlip owns everything inside bookRef */}
       <div className="fb-stage">
-        <div ref={bookRef} style={{ width: '100%', height: '100%' }} />
+        <div ref={bookRef} style={{ width: '100%', height: '100%', position: 'relative' }} />
       </div>
 
       {/* Nav */}
