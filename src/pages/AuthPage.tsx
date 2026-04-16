@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,28 +11,49 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { user, userRole, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user && userRole) {
+      if (userRole === 'super_admin') {
+        navigate('/super-admin', { replace: true });
+      } else if (userRole === 'restaurant_admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, userRole, loading, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
       if (isLogin) {
         await signIn(email, password);
-        navigate('/admin');
+        // Redirect handled by useEffect above after role loads
       } else {
         await signUp(email, password, fullName);
         toast({ title: 'Account created!', description: 'Please check your email to verify.' });
       }
     } catch (err: unknown) {
       toast({ title: 'Error', description: err instanceof Error ? err.message : 'Something went wrong', variant: 'destructive' });
-    } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  // Show nothing while checking existing session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-cream flex items-center justify-center">
+        <p className="text-muted-foreground font-body">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-cream flex items-center justify-center p-4">
@@ -71,8 +92,8 @@ export default function AuthPage() {
             onChange={e => setPassword(e.target.value)}
             className="rounded-xl h-12 font-body"
           />
-          <Button variant="hero" size="lg" className="w-full rounded-xl py-6" disabled={loading}>
-            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
+          <Button variant="hero" size="lg" className="w-full rounded-xl py-6" disabled={submitting}>
+            {submitting ? 'Signing in...' : (isLogin ? 'Sign In' : 'Sign Up')}
           </Button>
         </form>
 
