@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode,
+  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode, Store, MapPin,
 } from 'lucide-react';
 import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
@@ -188,7 +188,14 @@ function OrdersPanel({ restaurantId }: { restaurantId: string }) {
             <div>
               <p className="font-body font-semibold">{order.customer_name}</p>
               <p className="text-sm text-muted-foreground font-body">{order.customer_phone}</p>
-            </div>
+              {(order.section || order.table_number) && (
+                <div className="flex items-center gap-1 mt-1">
+                  <MapPin className="w-3 h-3 text-primary" />
+                  <span className="text-xs font-body text-primary font-medium">
+                    {[order.section, order.table_number ? `Table ${order.table_number}` : ''].filter(Boolean).join(' · ')}
+                  </span>
+                </div>
+              )}
             <Badge className={statusColors[order.status ?? 'pending']}>
               {order.status}
             </Badge>
