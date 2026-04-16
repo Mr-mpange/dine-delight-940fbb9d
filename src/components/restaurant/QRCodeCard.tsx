@@ -14,7 +14,7 @@ interface QRCodeCardProps {
 export default function QRCodeCard({ restaurantName, slug, logoUrl, address, phone }: QRCodeCardProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
-  const menuUrl = `${window.location.origin}/r/${slug}/menu`;
+  const menuUrl = `${window.location.origin}${import.meta.env.BASE_URL}r/${slug}/menu`;
 
   const handlePrint = () => {
     const content = printRef.current;
