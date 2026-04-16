@@ -18,6 +18,7 @@ const paymentMethods = [
   { id: 'mpesa', name: 'M-Pesa', icon: '📱' },
   { id: 'airtel', name: 'Airtel Money', icon: '📲' },
   { id: 'tigo', name: 'Tigo Pesa', icon: '💳' },
+  { id: 'demo', name: 'Demo (No Payment)', icon: '🧪' },
 ];
 
 export default function CheckoutPage({ restaurantId, restaurantSlug, commissionRate }: CheckoutPageProps) {
@@ -40,8 +41,8 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
 
     setStep('processing');
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Mock delay — no real payment gateway is called
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     const commission = totalPrice * (commissionRate / 100);
 
@@ -55,7 +56,7 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
           total: totalPrice,
           commission,
           payment_method: paymentMethod,
-          payment_status: 'paid',
+          payment_status: 'demo', // mock — not a real transaction
           status: 'pending',
           section: section || null,
           table_number: tableNumber || null,
@@ -87,16 +88,14 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
   if (step === 'processing') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        >
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
           <Loader2 className="w-16 h-16 text-primary" />
         </motion.div>
-        <h2 className="text-xl font-heading font-semibold mt-6">Processing Payment...</h2>
-        <p className="text-muted-foreground font-body mt-2">
-          Please wait while we confirm your {paymentMethods.find(m => m.id === paymentMethod)?.name} payment
-        </p>
+        <h2 className="text-xl font-heading font-semibold mt-6">Placing Order...</h2>
+        <p className="text-muted-foreground font-body mt-2">Hang tight, almost done</p>
+        <span className="mt-4 inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full border border-yellow-300">
+          🧪 Demo Mode — no real payment is charged
+        </span>
       </div>
     );
   }
@@ -141,6 +140,9 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
     <div className="min-h-screen bg-background">
       <div className="px-4 py-4 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <h2 className="text-xl font-heading font-semibold">Checkout</h2>
+        <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5 mt-2 font-body">
+          🧪 Demo Mode — no real payment will be processed
+        </p>
       </div>
 
       <div className="p-4 space-y-6 max-w-md mx-auto">
@@ -224,7 +226,7 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
         </motion.div>
 
         <Button variant="hero" size="lg" className="w-full rounded-xl py-6 text-lg" onClick={handleSubmit}>
-          Pay TZS {totalPrice.toLocaleString()}
+          🧪 Place Demo Order — TZS {totalPrice.toLocaleString()}
         </Button>
       </div>
     </div>
