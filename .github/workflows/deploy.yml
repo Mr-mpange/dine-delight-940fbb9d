@@ -37,7 +37,21 @@ jobs:
           VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
 
       - name: Add 404.html for SPA routing
-        run: cp dist/index.html dist/404.html
+        run: |
+          cat > dist/404.html << 'EOF'
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="UTF-8" />
+              <script>
+                var path = window.location.pathname + window.location.search + window.location.hash;
+                sessionStorage.setItem('spa-redirect', path);
+                window.location.replace('/dine-delight-940fbb9d/');
+              </script>
+            </head>
+            <body></body>
+          </html>
+          EOF
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

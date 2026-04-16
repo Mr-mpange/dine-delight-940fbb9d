@@ -3,6 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- SPA redirect: restore path from sessionStorage set by 404.html -->
+    <script>
+      (function() {
+        var redirect = sessionStorage.getItem('spa-redirect');
+        if (redirect) {
+          sessionStorage.removeItem('spa-redirect');
+          window.history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
     <!-- TODO: Set the document title to the name of your application -->
     <title>Digital Dine - Multi-Restaurant Ordering Platform</title>
     <meta name="description" content="A premium multi-restaurant digital ordering platform. QR code menus, mobile payments, real-time order tracking, and powerful admin dashboards." />
