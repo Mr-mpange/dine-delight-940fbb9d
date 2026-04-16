@@ -1,209 +1,51 @@
-.book-container {
+/* ---- page-flip library overrides & book styles ---- */
+
+.pf-book {
   width: 100%;
   max-width: 720px;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
-.book-spread {
-  position: relative;
-  display: flex;
+/* Cover pages */
+.pf-cover {
+  background: linear-gradient(135deg, #8b4513 0%, #5a2c0c 100%) !important;
+  border: 2px solid #5a2c0c;
+}
+
+.pf-cover-inner {
   width: 100%;
-  height: 70vw;
-  min-height: 320px;
-  max-height: 500px;
-  border-radius: 6px;
-  box-shadow:
-    0 2px 4px rgba(0,0,0,0.06),
-    0 12px 40px -8px rgba(0,0,0,0.25),
-    0 0 0 1px rgba(0,0,0,0.04);
-  transform-style: preserve-3d;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  box-sizing: border-box;
 }
 
-@media (min-width: 768px) {
-  .book-spread {
-    height: 500px;
-    max-height: 600px;
-  }
-}
-
-/* ---------- Pages ---------- */
-.book-page {
-  position: relative;
-  width: 50%;
+/* Inner menu pages */
+.pf-page {
+  background: linear-gradient(to right, #faf5ee, #f8f0e5);
+  border: 1px solid #e8dcc8;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
-.book-page-left {
-  background: linear-gradient(to right, #f8f0e5 0%, #faf5ee 85%, #f3ead8 100%);
-  border-radius: 6px 0 0 6px;
-  box-shadow: inset -4px 0 12px -6px rgba(0,0,0,0.08);
-}
-
-.book-page-right {
-  background: linear-gradient(to left, #f8f0e5 0%, #faf5ee 85%, #f3ead8 100%);
-  border-radius: 0 6px 6px 0;
-  box-shadow: inset 4px 0 12px -6px rgba(0,0,0,0.08);
-}
-
-.page-texture {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.04;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 28px,
-    rgba(0,0,0,0.05) 28px,
-    rgba(0,0,0,0.05) 29px
-  );
-  z-index: 1;
-}
-
-/* ---------- Spine ---------- */
-.book-spine {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 10px;
-  transform: translateX(-50%);
-  z-index: 15;
-  background: linear-gradient(
-    90deg,
-    rgba(0,0,0,0.15) 0%,
-    rgba(0,0,0,0.05) 20%,
-    rgba(255,255,255,0.08) 50%,
-    rgba(0,0,0,0.05) 80%,
-    rgba(0,0,0,0.15) 100%
-  );
-  pointer-events: none;
-}
-
-/* ---------- Draggable Flip Page ---------- */
-.flip-page {
-  position: absolute;
-  top: 0;
-  width: 50%;
+.pf-page-inner {
+  width: 100%;
   height: 100%;
+  padding: 24px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Georgia', serif;
   overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  z-index: 20;
-  will-change: transform;
-  transform-style: preserve-3d;
 }
 
-.flip-page-right {
-  right: 0;
-  transform-origin: left center;
-  background: linear-gradient(to left, #f8f0e5, #faf5ee);
-  border-radius: 0 6px 6px 0;
+/* page-flip library canvas sits on top — ensure it's visible */
+.stf__parent {
+  position: relative !important;
 }
 
-.flip-page-right-back {
-  right: 0;
-  transform-origin: left center;
-  background: linear-gradient(to right, #f3ead8, #faf5ee);
-  border-radius: 0 6px 6px 0;
-}
-
-.flip-page-left {
-  left: 0;
-  transform-origin: right center;
-  background: linear-gradient(to right, #f8f0e5, #faf5ee);
-  border-radius: 6px 0 0 6px;
-}
-
-.flip-page-left-back {
-  left: 0;
-  transform-origin: right center;
-  background: linear-gradient(to left, #f3ead8, #faf5ee);
-  border-radius: 6px 0 0 6px;
-}
-
-/* Dynamic shadow on flipping page */
-.flip-page-shadow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  transition: opacity 0.05s;
-}
-
-/* Page edge lines for realism */
-.book-spread::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 50%;
-  width: 1px;
-  transform: translateX(-5px);
-  background: rgba(0,0,0,0.03);
-  z-index: 14;
-}
-
-.book-spread::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 50%;
-  width: 1px;
-  transform: translateX(5px);
-  background: rgba(0,0,0,0.03);
-  z-index: 14;
-}
-
-/* Grab cursor hint */
-.book-grab-zone {
-  position: absolute;
-  top: 0;
-  width: 25%;
-  height: 100%;
-  z-index: 10;
-  cursor: grab;
-}
-
-.book-grab-zone:active {
-  cursor: grabbing;
-}
-
-.book-grab-zone-right {
-  right: 0;
-}
-
-.book-grab-zone-left {
-  left: 0;
-}
-
-/* Page curl hint indicator */
-.page-curl-hint {
-  position: absolute;
-  bottom: 8px;
-  width: 28px;
-  height: 28px;
-  z-index: 11;
-  border-radius: 0;
-  pointer-events: none;
-  animation: curlHint 2.5s ease-in-out infinite;
-}
-
-.page-curl-hint-right {
-  right: 4px;
-  background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.06) 50%);
-  border-bottom-right-radius: 4px;
-}
-
-.page-curl-hint-left {
-  left: 4px;
-  background: linear-gradient(-135deg, transparent 50%, rgba(0,0,0,0.06) 50%);
-  border-bottom-left-radius: 4px;
-}
-
-@keyframes curlHint {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.3); opacity: 1; }
-}
+/* No-scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
