@@ -115,9 +115,9 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       height: 500,
       size: 'stretch',
       minWidth: 150,
-      maxWidth: 500,
+      maxWidth: 1400,
       minHeight: 300,
-      maxHeight: 700,
+      maxHeight: 2000,
       drawShadow: true,
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
@@ -125,6 +125,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       showCover: true,
       usePortrait: true,
       mobileScrollSupport: true,
+      autoSize: true,
     });
 
     pf.loadFromHTML(container.querySelectorAll<HTMLElement>('.pf-page'));
@@ -158,7 +159,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
 
       {/* Book stage — PageFlip owns everything inside bookRef */}
       <div className="fb-stage">
-        <div ref={bookRef} />
+        <div ref={bookRef} style={{ width: '100%', height: '100%' }} />
       </div>
 
       {/* Nav */}
