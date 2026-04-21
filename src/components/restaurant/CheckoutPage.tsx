@@ -15,6 +15,7 @@ interface CheckoutPageProps {
 }
 
 const paymentMethods = [
+  { id: 'cash', name: 'Cash on Delivery', icon: '💵' },
   { id: 'mpesa', name: 'M-Pesa', icon: '📱' },
   { id: 'airtel', name: 'Airtel Money', icon: '📲' },
   { id: 'tigo', name: 'Tigo Pesa', icon: '💳' },
@@ -45,6 +46,7 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const commission = totalPrice * (commissionRate / 100);
+    const isCash = paymentMethod === 'cash';
 
     try {
       const { data: order, error } = await supabase
@@ -56,7 +58,7 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
           total: totalPrice,
           commission,
           payment_method: paymentMethod,
-          payment_status: 'demo', // mock — not a real transaction
+          payment_status: isCash ? 'cash_pending' : 'demo',
           status: 'pending',
           section: section || null,
           table_number: tableNumber || null,
@@ -226,7 +228,9 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
         </motion.div>
 
         <Button variant="hero" size="lg" className="w-full rounded-xl py-6 text-lg" onClick={handleSubmit}>
-          🧪 Place Demo Order — TZS {totalPrice.toLocaleString()}
+          {paymentMethod === 'cash'
+            ? `💵 Place Order (Pay Cash) — TZS ${totalPrice.toLocaleString()}`
+            : `🧪 Place Demo Order — TZS ${totalPrice.toLocaleString()}`}
         </Button>
       </div>
     </div>
