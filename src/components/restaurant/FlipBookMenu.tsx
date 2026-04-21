@@ -44,11 +44,6 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     if (!bookRef.current) return;
 
     const container = bookRef.current;
-    // Measure the stage (parent) to get real available dimensions
-    const stage = container.parentElement!;
-    const W = stage.clientWidth;
-    const H = stage.clientHeight;
-
     container.innerHTML = '';
 
     pages.forEach((page, idx) => {
