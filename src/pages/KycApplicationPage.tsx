@@ -92,8 +92,8 @@ export default function KycApplicationPage() {
     const path = `${user.id}/${folder}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('kyc-documents').upload(path, file);
     if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(path);
-    return publicUrl;
+    // Store only the storage path — admins generate signed URLs on demand.
+    return path;
   };
 
   const handleSubmit = async () => {

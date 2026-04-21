@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
+import KycDocLink from '@/components/restaurant/KycDocLink';
 
 type Tab = 'restaurants' | 'kyc' | 'analytics' | 'users';
 
@@ -334,8 +335,8 @@ function KycPanel() {
           <div className="grid grid-cols-2 gap-2 text-xs font-body text-muted-foreground">
             {app.business_license_number && <p>License: {app.business_license_number}</p>}
             {app.tin_number && <p>TIN: {app.tin_number}</p>}
-            {app.id_document_url && <a href={app.id_document_url} target="_blank" rel="noreferrer" className="text-primary underline">ID Document</a>}
-            {app.business_reg_url && <a href={app.business_reg_url} target="_blank" rel="noreferrer" className="text-primary underline">Business Reg</a>}
+            {app.id_document_url && <KycDocLink path={app.id_document_url} label="ID Document" />}
+            {app.business_reg_url && <KycDocLink path={app.business_reg_url} label="Business Reg" />}
           </div>
 
           <p className="text-xs text-muted-foreground font-body">Applied: {new Date(app.created_at).toLocaleDateString()}</p>

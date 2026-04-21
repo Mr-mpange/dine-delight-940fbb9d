@@ -23,10 +23,15 @@ export default function QRCodeCard({ restaurantName, slug, logoUrl, address, pho
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // Escape HTML to prevent XSS via restaurant name in <title>
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
     printWindow.document.write(`
       <html>
         <head>
-          <title>QR Code - ${restaurantName}</title>
+          <title>QR Code - ${escapeHtml(restaurantName)}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Georgia', serif; background: white; }
