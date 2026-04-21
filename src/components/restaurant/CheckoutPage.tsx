@@ -228,7 +228,9 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
         </motion.div>
 
         <Button variant="hero" size="lg" className="w-full rounded-xl py-6 text-lg" onClick={handleSubmit}>
-          🧪 Place Demo Order — TZS {totalPrice.toLocaleString()}
+          {paymentMethod === 'cash'
+            ? `💵 Place Order (Pay Cash) — TZS ${totalPrice.toLocaleString()}`
+            : `🧪 Place Demo Order — TZS ${totalPrice.toLocaleString()}`}
         </Button>
       </div>
     </div>
