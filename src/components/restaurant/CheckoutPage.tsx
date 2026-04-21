@@ -46,6 +46,7 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const commission = totalPrice * (commissionRate / 100);
+    const isCash = paymentMethod === 'cash';
 
     try {
       const { data: order, error } = await supabase
@@ -57,7 +58,7 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
           total: totalPrice,
           commission,
           payment_method: paymentMethod,
-          payment_status: 'demo', // mock — not a real transaction
+          payment_status: isCash ? 'cash_pending' : 'demo',
           status: 'pending',
           section: section || null,
           table_number: tableNumber || null,
