@@ -43,12 +43,15 @@ export default function Index() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Button variant="hero" size="lg" className="rounded-xl py-6 px-8 text-lg" asChild>
-                <Link to="/auth">Get Started</Link>
+                <Link to="/auth">List Your Restaurant</Link>
               </Button>
               <Button variant="outline-warm" size="lg" className="rounded-xl py-6 px-8 text-lg border-background/30 text-background hover:bg-background/10 hover:text-background" asChild>
                 <Link to="/r/demo">View Demo</Link>
               </Button>
             </div>
+            <p className="text-background/70 font-body text-sm mt-4">
+              Sign up → submit KYC at <span className="font-mono">/apply</span> → get approved → manage your restaurant.
+            </p>
           </motion.div>
         </div>
       </div>
