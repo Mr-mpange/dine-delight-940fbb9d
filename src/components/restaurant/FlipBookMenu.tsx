@@ -27,14 +27,31 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   type Page =
     | { type: 'cover' }
     | { type: 'back' }
+    | { type: 'toc'; entries: { category: string; page: number }[] }
     | { type: 'items'; category: string; items: MenuItem[] };
   const pages: Page[] = [];
   pages.push({ type: 'cover' });
+
+  // Build item pages first so we can compute TOC page numbers
+  const itemPages: Page[] = [];
+  const tocEntries: { category: string; page: number }[] = [];
+  // page 1 = cover, page 2 = TOC, items start at page 3 (1-indexed for display)
+  let currentPageNum = 3;
   categories.forEach(cat => {
     const items = cat.items.filter(i => i.is_available);
-    for (let i = 0; i < items.length; i += 2)
-      pages.push({ type: 'items', category: cat.name, items: items.slice(i, i + 2) });
+    if (items.length === 0) return;
+    tocEntries.push({ category: cat.name, page: currentPageNum });
+    for (let i = 0; i < items.length; i += 2) {
+      itemPages.push({ type: 'items', category: cat.name, items: items.slice(i, i + 2) });
+      currentPageNum++;
+    }
   });
+  pages.push({ type: 'toc', entries: tocEntries });
+  pages.push(...itemPages);
+  // Ensure even total page count so the back hard cover lands on the right side
+  if (pages.length % 2 !== 0) {
+    pages.push({ type: 'items', category: '', items: [] });
+  }
   pages.push({ type: 'back' });
 
   const addToCart = (item: MenuItem) =>
