@@ -15,6 +15,7 @@ interface CheckoutPageProps {
 }
 
 const paymentMethods = [
+  { id: 'cash', name: 'Cash on Delivery', icon: '💵' },
   { id: 'mpesa', name: 'M-Pesa', icon: '📱' },
   { id: 'airtel', name: 'Airtel Money', icon: '📲' },
   { id: 'tigo', name: 'Tigo Pesa', icon: '💳' },
