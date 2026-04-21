@@ -107,6 +107,32 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
         }
         inner.appendChild(overlay);
         div.appendChild(inner);
+      } else if (page.type === 'toc') {
+        div.className = 'pf-page pf-toc';
+        const tocHeader = el('div', 'pf-toc-header');
+        tocHeader.appendChild(el('h2', undefined, 'Table of Contents'));
+        tocHeader.appendChild(el('div', 'pf-toc-divider'));
+        div.appendChild(tocHeader);
+
+        const tocList = el('ul', 'pf-toc-list');
+        page.entries.forEach((entry, idx) => {
+          const li = document.createElement('li');
+          li.className = 'pf-toc-item';
+          const num = el('span', 'pf-toc-num', String(idx + 1).padStart(2, '0'));
+          const name = el('span', 'pf-toc-name', entry.category);
+          const dots = el('span', 'pf-toc-dots');
+          const pageN = el('span', 'pf-toc-page', String(entry.page));
+          li.appendChild(num);
+          li.appendChild(name);
+          li.appendChild(dots);
+          li.appendChild(pageN);
+          li.addEventListener('click', () => {
+            // page-flip is 0-indexed; entry.page is 1-indexed display number
+            pfRef.current?.flip(entry.page - 1);
+          });
+          tocList.appendChild(li);
+        });
+        div.appendChild(tocList);
       } else {
         div.className = 'pf-page pf-menu';
 
@@ -120,7 +146,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
           hero.appendChild(img);
           hero.appendChild(el('span', undefined, page.category));
           div.appendChild(hero);
-        } else {
+        } else if (page.category) {
           div.appendChild(el('div', 'pf-hero-plain', page.category));
         }
 
