@@ -363,9 +363,17 @@ function KycPanel() {
         </motion.div>
       ))}
       {(!applications || applications.length === 0) && (
-        <div className="text-center py-12 text-muted-foreground font-body">
+        <div className="text-center py-12 text-muted-foreground font-body space-y-3">
           <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          No KYC applications yet
+          <p className="font-semibold text-foreground">No KYC applications yet</p>
+          <p className="text-sm max-w-md mx-auto">
+            New users sign up at <span className="font-mono text-primary">/auth</span> → they're auto-redirected to{' '}
+            <span className="font-mono text-primary">/apply</span> to submit KYC. Approved applicants
+            become restaurant admins.
+          </p>
+          <Button variant="outline-warm" size="sm" asChild className="mt-2">
+            <Link to="/auth" target="_blank">Open Sign-Up Page</Link>
+          </Button>
         </div>
       )}
     </div>
