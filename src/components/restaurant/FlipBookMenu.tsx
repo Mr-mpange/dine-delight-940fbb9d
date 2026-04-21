@@ -24,7 +24,11 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   const [total, setTotal] = useState(0);
 
   // Build page data
-  const pages: Array<{ type: 'cover' | 'back' } | { type: 'items'; category: string; items: MenuItem[] }> = [];
+  type Page =
+    | { type: 'cover' }
+    | { type: 'back' }
+    | { type: 'items'; category: string; items: MenuItem[] };
+  const pages: Page[] = [];
   pages.push({ type: 'cover' });
   categories.forEach(cat => {
     const items = cat.items.filter(i => i.is_available);
