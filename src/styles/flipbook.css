@@ -79,13 +79,18 @@
     that PageFlip moves into its own DOM)
 ══════════════════════════════════════ */
 
-/* Base page */
+/* Base page — warm parchment with subtle paper texture */
 .pf-page {
-  background: #fdfaf5;
+  background-color: #fdfaf5;
+  background-image:
+    radial-gradient(ellipse at top left, rgba(192, 98, 42, 0.08), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(139, 69, 19, 0.07), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(139, 69, 19, 0.015) 0px, rgba(139, 69, 19, 0.015) 1px, transparent 1px, transparent 3px);
   color: #333;
   overflow: hidden;
   font-family: 'Georgia', serif;
   box-sizing: border-box;
+  border: 1px solid rgba(139, 69, 19, 0.15);
 }
 
 /* Cover */
