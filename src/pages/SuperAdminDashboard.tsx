@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
+import KycDocLink from '@/components/restaurant/KycDocLink';
 
 type Tab = 'restaurants' | 'kyc' | 'analytics' | 'users';
 
