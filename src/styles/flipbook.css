@@ -277,3 +277,26 @@
 /* PageFlip left/right page shadows */
 .pf-page.--left { box-shadow: inset -20px 0 30px -10px rgba(0,0,0,0.15); }
 .pf-page.--right { box-shadow: inset 20px 0 30px -10px rgba(0,0,0,0.15); }
+
+/* ── Mobile: fullscreen, no padding, smaller fonts ── */
+@media (max-width: 640px) {
+  .fb-stage {
+    padding: 0 !important;
+  }
+  .fb-stage > div {
+    max-width: 100% !important;
+  }
+  .fb-header {
+    padding: 8px 12px;
+  }
+  .fb-title { font-size: 13px; }
+  .fb-nav { padding: 6px 12px 10px; gap: 10px; }
+  .fb-nav-btn { padding: 6px 16px; font-size: 12px; }
+  .pf-cover-overlay h1 { font-size: 22px; }
+  .pf-item-img { width: 70px; height: 70px; }
+  .pf-item-name { font-size: 12px; }
+  .pf-item-desc { font-size: 9px; }
+  .pf-item-price { font-size: 12px; }
+  .pf-add-btn { padding: 4px 10px; font-size: 10px; }
+  .pf-hero { height: 100px; }
+}
