@@ -112,7 +112,9 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       container.appendChild(div);
     });
 
-    // Use stretch mode like the working sample — PageFlip handles realistic flipping
+    // Detect mobile — use portrait (single-page) so the book fills the screen
+    const isMobile = window.innerWidth < 768;
+
     const pf = new PageFlip(container, {
       width: 350,
       height: 500,
@@ -126,7 +128,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       flippingTime: 1000,
       swipeDistance: 30,
       showCover: true,
-      usePortrait: false,
+      usePortrait: isMobile,
       mobileScrollSupport: false,
       autoSize: true,
     });
