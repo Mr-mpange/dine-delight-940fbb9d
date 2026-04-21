@@ -46,67 +46,104 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     const container = bookRef.current;
     container.innerHTML = '';
 
-    pages.forEach((page, idx) => {
+    // Allow only http(s) image URLs to prevent javascript:/data: protocol XSS
+    const safeImgUrl = (url: string | null | undefined): string | null => {
+      if (!url) return null;
+      try {
+        const u = new URL(url, window.location.origin);
+        return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const el = (tag: string, className?: string, text?: string) => {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text != null) e.textContent = text;
+      return e;
+    };
+
+    pages.forEach((page) => {
       const div = document.createElement('div');
 
-      if (page.type === 'cover') {
+      if (page.type === 'cover' || page.type === 'back') {
         div.className = 'pf-page pf-cover';
         div.setAttribute('data-density', 'hard');
-        div.innerHTML = `
-          <div class="pf-cover-inner">
-            ${coverImageUrl ? `<img src="${coverImageUrl}" class="pf-cover-bg" alt="" />` : ''}
-            <div class="pf-cover-overlay">
-              <h1>${restaurantName}</h1>
-              <p>Our Menu</p>
-              <span>Drag corners to turn pages</span>
-            </div>
-          </div>`;
-      } else if (page.type === 'back') {
-        div.className = 'pf-page pf-cover';
-        div.setAttribute('data-density', 'hard');
-        div.innerHTML = `
-          <div class="pf-cover-inner">
-            ${coverImageUrl ? `<img src="${coverImageUrl}" class="pf-cover-bg" alt="" />` : ''}
-            <div class="pf-cover-overlay">
-              <h1>Thank You</h1>
-              <p>${restaurantName}</p>
-            </div>
-          </div>`;
+        const inner = el('div', 'pf-cover-inner');
+        const safeCover = safeImgUrl(coverImageUrl);
+        if (safeCover) {
+          const img = document.createElement('img');
+          img.src = safeCover;
+          img.className = 'pf-cover-bg';
+          img.alt = '';
+          inner.appendChild(img);
+        }
+        const overlay = el('div', 'pf-cover-overlay');
+        if (page.type === 'cover') {
+          overlay.appendChild(el('h1', undefined, restaurantName));
+          overlay.appendChild(el('p', undefined, 'Our Menu'));
+          overlay.appendChild(el('span', undefined, 'Drag corners to turn pages'));
+        } else {
+          overlay.appendChild(el('h1', undefined, 'Thank You'));
+          overlay.appendChild(el('p', undefined, restaurantName));
+        }
+        inner.appendChild(overlay);
+        div.appendChild(inner);
       } else {
         div.className = 'pf-page pf-menu';
-        const heroImg = page.items.find(i => i.image_url)?.image_url;
-        const heroHtml = heroImg
-          ? `<div class="pf-hero"><img src="${heroImg}" alt="${page.category}" /><span>${page.category}</span></div>`
-          : `<div class="pf-hero-plain">${page.category}</div>`;
 
-        const itemsHtml = page.items.map(item => `
-          <div class="pf-item" data-id="${item.id}">
-            ${item.image_url
-              ? `<img src="${item.image_url}" alt="${item.name}" class="pf-item-img" />`
-              : `<div class="pf-item-img pf-item-img-empty"></div>`}
-            <div class="pf-item-info">
-              <p class="pf-item-name">${item.name}</p>
-              ${item.description ? `<p class="pf-item-desc">${item.description}</p>` : ''}
-              <div class="pf-item-row">
-                <span class="pf-item-price">TZS ${item.price.toLocaleString()}</span>
-                <button class="pf-add-btn" data-id="${item.id}">+ Add</button>
-              </div>
-            </div>
-          </div>`).join('');
+        // Hero
+        const heroImgUrl = safeImgUrl(page.items.find(i => i.image_url)?.image_url);
+        if (heroImgUrl) {
+          const hero = el('div', 'pf-hero');
+          const img = document.createElement('img');
+          img.src = heroImgUrl;
+          img.alt = page.category;
+          hero.appendChild(img);
+          hero.appendChild(el('span', undefined, page.category));
+          div.appendChild(hero);
+        } else {
+          div.appendChild(el('div', 'pf-hero-plain', page.category));
+        }
 
-        div.innerHTML = `${heroHtml}<div class="pf-items">${itemsHtml}</div>`;
+        // Items
+        const itemsWrap = el('div', 'pf-items');
+        page.items.forEach(item => {
+          const itemDiv = el('div', 'pf-item');
+          itemDiv.dataset.id = item.id;
 
-        // Wire up Add buttons after DOM insert
-        setTimeout(() => {
-          div.querySelectorAll<HTMLButtonElement>('.pf-add-btn').forEach(btn => {
-            const id = btn.dataset.id!;
-            const item = page.items.find(i => i.id === id);
-            if (item) btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              addToCart(item);
-            });
+          const itemImg = safeImgUrl(item.image_url);
+          if (itemImg) {
+            const img = document.createElement('img');
+            img.src = itemImg;
+            img.alt = item.name;
+            img.className = 'pf-item-img';
+            itemDiv.appendChild(img);
+          } else {
+            itemDiv.appendChild(el('div', 'pf-item-img pf-item-img-empty'));
+          }
+
+          const info = el('div', 'pf-item-info');
+          info.appendChild(el('p', 'pf-item-name', item.name));
+          if (item.description) {
+            info.appendChild(el('p', 'pf-item-desc', item.description));
+          }
+          const row = el('div', 'pf-item-row');
+          row.appendChild(el('span', 'pf-item-price', `TZS ${item.price.toLocaleString()}`));
+          const btn = document.createElement('button');
+          btn.className = 'pf-add-btn';
+          btn.textContent = '+ Add';
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addToCart(item);
           });
-        }, 0);
+          row.appendChild(btn);
+          info.appendChild(row);
+          itemDiv.appendChild(info);
+          itemsWrap.appendChild(itemDiv);
+        });
+        div.appendChild(itemsWrap);
       }
 
       container.appendChild(div);
