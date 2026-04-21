@@ -112,21 +112,23 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       container.appendChild(div);
     });
 
-    // portrait: one page = full width, two pages side by side = W
-    // We want each page to be W/2 wide (landscape spread) or W wide (portrait single)
-    // Use portrait mode: page width = W, height = H
+    // Use stretch mode like the working sample — PageFlip handles realistic flipping
     const pf = new PageFlip(container, {
-      width: Math.floor(W / 2),   // single page width (PageFlip shows 2 side by side)
-      height: H,
-      size: 'fixed',
+      width: 350,
+      height: 500,
+      size: 'stretch',
+      minWidth: 280,
+      maxWidth: 800,
+      minHeight: 400,
+      maxHeight: 1200,
       drawShadow: true,
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
       swipeDistance: 30,
       showCover: true,
-      usePortrait: false,         // landscape = 2 pages visible, fills full width
-      mobileScrollSupport: true,
-      autoSize: false,
+      usePortrait: false,
+      mobileScrollSupport: false,
+      autoSize: true,
     });
 
     pf.loadFromHTML(container.querySelectorAll<HTMLElement>('.pf-page'));
