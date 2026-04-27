@@ -85,22 +85,28 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     const container = bookRef.current;
     container.innerHTML = '';
 
-    // Allow only http(s) image URLs to prevent javascript:/data: protocol XSS
-    const safeImgUrl = (url: string | null | undefined): string | null => {
-      if (!url) return null;
-      try {
-        const u = new URL(url, window.location.origin);
-        return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
-      } catch {
-        return null;
-      }
-    };
-
     const el = (tag: string, className?: string, text?: string) => {
       const e = document.createElement(tag);
       if (className) e.className = className;
       if (text != null) e.textContent = text;
       return e;
+    };
+
+    const coverFace = (side: 'front' | 'back', title: string, subtitle: string, hint?: string, imgUrl?: string | null) => {
+      const face = el('div', `pf-cover-face pf-cover-${side}`);
+      if (imgUrl && side === 'front') {
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.className = 'pf-cover-bg';
+        img.alt = '';
+        face.appendChild(img);
+      }
+      const overlay = el('div', 'pf-cover-overlay');
+      overlay.appendChild(el('h1', undefined, title));
+      overlay.appendChild(el('p', undefined, subtitle));
+      if (hint) overlay.appendChild(el('span', undefined, hint));
+      face.appendChild(overlay);
+      return face;
     };
 
     pages.forEach((page) => {
@@ -111,23 +117,13 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
         div.setAttribute('data-density', 'hard');
         const inner = el('div', 'pf-cover-inner');
         const safeCover = safeImgUrl(coverImageUrl);
-        if (safeCover) {
-          const img = document.createElement('img');
-          img.src = safeCover;
-          img.className = 'pf-cover-bg';
-          img.alt = '';
-          inner.appendChild(img);
-        }
-        const overlay = el('div', 'pf-cover-overlay');
         if (page.type === 'cover') {
-          overlay.appendChild(el('h1', undefined, restaurantName));
-          overlay.appendChild(el('p', undefined, 'Our Menu'));
-          overlay.appendChild(el('span', undefined, 'Drag corners to turn pages'));
+          inner.appendChild(coverFace('front', restaurantName, 'Our Menu', 'Drag corners to turn pages', safeCover));
+          inner.appendChild(coverFace('back', restaurantName, 'Inside Cover'));
         } else {
-          overlay.appendChild(el('h1', undefined, 'Thank You'));
-          overlay.appendChild(el('p', undefined, restaurantName));
+          inner.appendChild(coverFace('front', 'Thank You', restaurantName, undefined, safeCover));
+          inner.appendChild(coverFace('back', restaurantName, 'Back Cover'));
         }
-        inner.appendChild(overlay);
         div.appendChild(inner);
       } else if (page.type === 'toc') {
         div.className = 'pf-page pf-toc';
