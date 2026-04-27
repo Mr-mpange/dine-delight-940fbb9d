@@ -195,6 +195,18 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     // Detect mobile — use portrait (single-page) so the book fills the screen
     const isMobile = window.innerWidth < 768;
 
+    // On small screens, soft covers + showCover:false avoids the
+    // "detached cover" artifact during open/close in portrait mode.
+    // page-flip animates hard covers separately from soft pages, which
+    // looks broken on a single-page (portrait) layout. Treating the
+    // cover as a regular soft page makes the open/close turn smoothly.
+    if (isMobile) {
+      container.querySelectorAll<HTMLElement>('.pf-cover').forEach(c => {
+        c.removeAttribute('data-density');
+        c.classList.add('pf-cover-soft');
+      });
+    }
+
     const pf = new PageFlip(container, {
       width: 350,
       height: 500,
@@ -207,7 +219,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
       swipeDistance: 30,
-      showCover: true,
+      showCover: !isMobile,
       usePortrait: isMobile,
       mobileScrollSupport: false,
       autoSize: true,
