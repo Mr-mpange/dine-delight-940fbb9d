@@ -1,9 +1,8 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { PageFlip } from 'page-flip';
-import { Plus, ShoppingCart, X } from 'lucide-react';
+import { ShoppingCart, X } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Link, useParams } from 'react-router-dom';
-import ReactDOM from 'react-dom';
 import '@/styles/flipbook.css';
 
 interface MenuItem {
@@ -15,6 +14,16 @@ interface FlipBookMenuProps {
   categories: MenuCategory[]; restaurantName: string; coverImageUrl?: string | null;
 }
 
+const safeImgUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  try {
+    const u = new URL(url, typeof window !== 'undefined' ? window.location.origin : undefined);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function FlipBookMenu({ categories, restaurantName, coverImageUrl }: FlipBookMenuProps) {
   const { dispatch, totalItems } = useCart();
   const { slug } = useParams<{ slug: string }>();
@@ -22,6 +31,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   const pfRef = useRef<PageFlip | null>(null);
   const [pageNum, setPageNum] = useState(0);
   const [total, setTotal] = useState(0);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   // Re-init the book when we cross the mobile/desktop breakpoint so the
