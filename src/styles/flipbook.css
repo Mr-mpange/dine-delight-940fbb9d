@@ -406,6 +406,85 @@
   font-family: 'Georgia', serif;
 }
 
+/* Item image detail dialog */
+.fb-item-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: hsl(210 29% 10% / 0.72);
+}
+.fb-item-modal-card {
+  position: relative;
+  width: min(92vw, 520px);
+  max-height: 86vh;
+  overflow: hidden auto;
+  background: hsl(40 58% 96%);
+  color: hsl(22 52% 13%);
+  border-radius: 8px;
+  box-shadow: 0 22px 70px hsl(0 0% 0% / 0.45);
+}
+.fb-item-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  color: hsl(0 0% 100%);
+  background: hsl(0 0% 0% / 0.46);
+  cursor: pointer;
+}
+.fb-item-modal-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+.fb-item-modal-body { padding: 18px 20px 20px; }
+.fb-item-modal-body h2 {
+  margin: 0 44px 8px 0;
+  font-size: 24px;
+  line-height: 1.15;
+  color: hsl(22 57% 12%);
+}
+.fb-item-modal-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: hsl(23 24% 36%);
+}
+.fb-item-modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+}
+.fb-item-modal-row span {
+  font-size: 18px;
+  font-weight: 800;
+  color: hsl(25 72% 31%);
+}
+.fb-item-modal-row button {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 800;
+  color: hsl(0 0% 100%);
+  background: linear-gradient(135deg, hsl(23 64% 46%), hsl(25 72% 31%));
+  box-shadow: 0 6px 16px hsl(25 72% 20% / 0.28);
+  cursor: pointer;
+}
+
 /* Soft-cover fallback used on small screens to avoid the
    "detached hard cover" artifact during portrait open/close */
 .pf-cover-soft {
