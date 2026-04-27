@@ -118,7 +118,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
+.pf-cover-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(110deg, hsl(25 74% 19%) 0%, hsl(26 72% 31%) 42%, hsl(23 72% 20%) 100%);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.pf-cover-back {
+  transform: rotateY(180deg) translateZ(1px);
+  background:
+    linear-gradient(110deg, hsl(25 72% 16%) 0%, hsl(31 48% 24%) 48%, hsl(25 72% 16%) 100%);
+}
+.pf-cover-front { transform: translateZ(1px); }
 .pf-cover-bg {
   position: absolute;
   inset: 0;
@@ -235,6 +256,17 @@
   flex-shrink: 0;
   box-shadow: 0 3px 10px rgba(0,0,0,0.15);
   display: block;
+}
+.pf-item-img-clickable {
+  cursor: zoom-in;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.pf-item-img-clickable:hover,
+.pf-item-img-clickable:focus-visible {
+  transform: scale(1.03);
+  box-shadow: 0 6px 16px hsl(25 72% 20% / 0.3);
+  outline: 2px solid hsl(32 78% 55% / 0.9);
+  outline-offset: 2px;
 }
 .pf-item-img-empty {
   background: linear-gradient(135deg, #e8d5c0, #c9a87c);
