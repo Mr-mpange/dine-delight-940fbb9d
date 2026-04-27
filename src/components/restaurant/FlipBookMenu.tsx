@@ -247,7 +247,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       pfRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, restaurantName, coverImageUrl]);
+  }, [categories, restaurantName, coverImageUrl, isMobile]);
 
   return (
     <div className="fb-overlay">
