@@ -179,7 +179,21 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
             const img = document.createElement('img');
             img.src = itemImg;
             img.alt = item.name;
-            img.className = 'pf-item-img';
+            img.className = 'pf-item-img pf-item-img-clickable';
+            img.role = 'button';
+            img.tabIndex = 0;
+            img.setAttribute('aria-label', `View ${item.name} details`);
+            const openDetails = (event: Event) => {
+              event.stopPropagation();
+              setSelectedItem(item);
+            };
+            img.addEventListener('click', openDetails);
+            img.addEventListener('keydown', (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openDetails(event);
+              }
+            });
             itemDiv.appendChild(img);
           } else {
             itemDiv.appendChild(el('div', 'pf-item-img pf-item-img-empty'));
@@ -237,6 +251,8 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
       swipeDistance: 30,
+        showPageCorners: false,
+        disableFlipByClick: true,
       showCover: !isMobile,
       usePortrait: isMobile,
       mobileScrollSupport: false,
