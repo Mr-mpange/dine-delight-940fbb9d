@@ -22,6 +22,18 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   const pfRef = useRef<PageFlip | null>(null);
   const [pageNum, setPageNum] = useState(0);
   const [total, setTotal] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+
+  // Re-init the book when we cross the mobile/desktop breakpoint so the
+  // single-page-cover fallback applies cleanly on small screens.
+  useEffect(() => {
+    const onResize = () => {
+      const next = window.innerWidth < 768;
+      setIsMobile(prev => (prev !== next ? next : prev));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Build page data
   type Page =
@@ -193,7 +205,19 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     });
 
     // Detect mobile — use portrait (single-page) so the book fills the screen
-    const isMobile = window.innerWidth < 768;
+    // (uses the reactive isMobile state so the book re-inits on resize)
+
+    // On small screens, soft covers + showCover:false avoids the
+    // "detached cover" artifact during open/close in portrait mode.
+    // page-flip animates hard covers separately from soft pages, which
+    // looks broken on a single-page (portrait) layout. Treating the
+    // cover as a regular soft page makes the open/close turn smoothly.
+    if (isMobile) {
+      container.querySelectorAll<HTMLElement>('.pf-cover').forEach(c => {
+        c.removeAttribute('data-density');
+        c.classList.add('pf-cover-soft');
+      });
+    }
 
     const pf = new PageFlip(container, {
       width: 350,
@@ -207,7 +231,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
       swipeDistance: 30,
-      showCover: true,
+      showCover: !isMobile,
       usePortrait: isMobile,
       mobileScrollSupport: false,
       autoSize: true,
@@ -223,7 +247,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       pfRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, restaurantName, coverImageUrl]);
+  }, [categories, restaurantName, coverImageUrl, isMobile]);
 
   return (
     <div className="fb-overlay">

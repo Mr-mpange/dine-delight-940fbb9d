@@ -342,6 +342,19 @@
   font-family: 'Georgia', serif;
 }
 
+/* Soft-cover fallback used on small screens to avoid the
+   "detached hard cover" artifact during portrait open/close */
+.pf-cover-soft {
+  /* Override hard-cover inset shadows so the page turns smoothly */
+  box-shadow: none !important;
+  border: none !important;
+}
+.pf-cover-soft.--left,
+.pf-cover-soft.--right {
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.35) !important;
+  border: none !important;
+}
+
 /* ── Mobile: fullscreen, no padding, smaller fonts ── */
 @media (max-width: 640px) {
   .fb-stage {
