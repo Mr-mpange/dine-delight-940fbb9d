@@ -1,9 +1,8 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { PageFlip } from 'page-flip';
-import { Plus, ShoppingCart, X } from 'lucide-react';
+import { ShoppingCart, X } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Link, useParams } from 'react-router-dom';
-import ReactDOM from 'react-dom';
 import '@/styles/flipbook.css';
 
 interface MenuItem {
@@ -15,6 +14,16 @@ interface FlipBookMenuProps {
   categories: MenuCategory[]; restaurantName: string; coverImageUrl?: string | null;
 }
 
+const safeImgUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  try {
+    const u = new URL(url, typeof window !== 'undefined' ? window.location.origin : undefined);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function FlipBookMenu({ categories, restaurantName, coverImageUrl }: FlipBookMenuProps) {
   const { dispatch, totalItems } = useCart();
   const { slug } = useParams<{ slug: string }>();
@@ -22,6 +31,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   const pfRef = useRef<PageFlip | null>(null);
   const [pageNum, setPageNum] = useState(0);
   const [total, setTotal] = useState(0);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   // Re-init the book when we cross the mobile/desktop breakpoint so the
@@ -75,22 +85,28 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     const container = bookRef.current;
     container.innerHTML = '';
 
-    // Allow only http(s) image URLs to prevent javascript:/data: protocol XSS
-    const safeImgUrl = (url: string | null | undefined): string | null => {
-      if (!url) return null;
-      try {
-        const u = new URL(url, window.location.origin);
-        return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
-      } catch {
-        return null;
-      }
-    };
-
     const el = (tag: string, className?: string, text?: string) => {
       const e = document.createElement(tag);
       if (className) e.className = className;
       if (text != null) e.textContent = text;
       return e;
+    };
+
+    const coverFace = (side: 'front' | 'back', title: string, subtitle: string, hint?: string, imgUrl?: string | null) => {
+      const face = el('div', `pf-cover-face pf-cover-${side}`);
+      if (imgUrl && side === 'front') {
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.className = 'pf-cover-bg';
+        img.alt = '';
+        face.appendChild(img);
+      }
+      const overlay = el('div', 'pf-cover-overlay');
+      overlay.appendChild(el('h1', undefined, title));
+      overlay.appendChild(el('p', undefined, subtitle));
+      if (hint) overlay.appendChild(el('span', undefined, hint));
+      face.appendChild(overlay);
+      return face;
     };
 
     pages.forEach((page) => {
@@ -101,23 +117,13 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
         div.setAttribute('data-density', 'hard');
         const inner = el('div', 'pf-cover-inner');
         const safeCover = safeImgUrl(coverImageUrl);
-        if (safeCover) {
-          const img = document.createElement('img');
-          img.src = safeCover;
-          img.className = 'pf-cover-bg';
-          img.alt = '';
-          inner.appendChild(img);
-        }
-        const overlay = el('div', 'pf-cover-overlay');
         if (page.type === 'cover') {
-          overlay.appendChild(el('h1', undefined, restaurantName));
-          overlay.appendChild(el('p', undefined, 'Our Menu'));
-          overlay.appendChild(el('span', undefined, 'Drag corners to turn pages'));
+          inner.appendChild(coverFace('front', restaurantName, 'Our Menu', 'Drag corners to turn pages', safeCover));
+          inner.appendChild(coverFace('back', restaurantName, 'Inside Cover'));
         } else {
-          overlay.appendChild(el('h1', undefined, 'Thank You'));
-          overlay.appendChild(el('p', undefined, restaurantName));
+          inner.appendChild(coverFace('front', 'Thank You', restaurantName, undefined, safeCover));
+          inner.appendChild(coverFace('back', restaurantName, 'Back Cover'));
         }
-        inner.appendChild(overlay);
         div.appendChild(inner);
       } else if (page.type === 'toc') {
         div.className = 'pf-page pf-toc';
@@ -173,7 +179,21 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
             const img = document.createElement('img');
             img.src = itemImg;
             img.alt = item.name;
-            img.className = 'pf-item-img';
+            img.className = 'pf-item-img pf-item-img-clickable';
+            img.role = 'button';
+            img.tabIndex = 0;
+            img.setAttribute('aria-label', `View ${item.name} details`);
+            const openDetails = (event: Event) => {
+              event.stopPropagation();
+              setSelectedItem(item);
+            };
+            img.addEventListener('click', openDetails);
+            img.addEventListener('keydown', (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openDetails(event);
+              }
+            });
             itemDiv.appendChild(img);
           } else {
             itemDiv.appendChild(el('div', 'pf-item-img pf-item-img-empty'));
@@ -231,6 +251,8 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       maxShadowOpacity: 0.5,
       flippingTime: 1000,
       swipeDistance: 30,
+        showPageCorners: false,
+        disableFlipByClick: true,
       showCover: !isMobile,
       usePortrait: isMobile,
       mobileScrollSupport: false,
@@ -281,6 +303,27 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
           Next →
         </button>
       </div>
+
+      {selectedItem && (
+        <div className="fb-item-modal" role="dialog" aria-modal="true" aria-label={`${selectedItem.name} details`} onClick={() => setSelectedItem(null)}>
+          <div className="fb-item-modal-card" onClick={(event) => event.stopPropagation()}>
+            <button className="fb-item-modal-close" onClick={() => setSelectedItem(null)} aria-label="Close item details">
+              <X style={{ width: 18, height: 18 }} />
+            </button>
+            {safeImgUrl(selectedItem.image_url) && (
+              <img className="fb-item-modal-img" src={safeImgUrl(selectedItem.image_url) ?? ''} alt={selectedItem.name} />
+            )}
+            <div className="fb-item-modal-body">
+              <h2>{selectedItem.name}</h2>
+              <p>{selectedItem.description || 'No description available.'}</p>
+              <div className="fb-item-modal-row">
+                <span>TZS {selectedItem.price.toLocaleString()}</span>
+                <button onClick={() => addToCart(selectedItem)}>+ Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

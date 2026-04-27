@@ -102,9 +102,12 @@
 /* page-flip wraps each page in .stf__item — that's what actually rotates.
    Force its backface hidden too so the back of a turning page is opaque. */
 .stf__item,
-.stf__block {
+.stf__block,
+.stf__wrapper {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 /* Cover */
@@ -118,7 +121,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
+.pf-cover-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(110deg, hsl(25 74% 19%) 0%, hsl(26 72% 31%) 42%, hsl(23 72% 20%) 100%);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.pf-cover-back {
+  transform: rotateY(180deg) translateZ(1px);
+  background:
+    linear-gradient(110deg, hsl(25 72% 16%) 0%, hsl(31 48% 24%) 48%, hsl(25 72% 16%) 100%);
+}
+.pf-cover-front { transform: translateZ(1px); }
 .pf-cover-bg {
   position: absolute;
   inset: 0;
@@ -236,6 +260,17 @@
   box-shadow: 0 3px 10px rgba(0,0,0,0.15);
   display: block;
 }
+.pf-item-img-clickable {
+  cursor: zoom-in;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.pf-item-img-clickable:hover,
+.pf-item-img-clickable:focus-visible {
+  transform: scale(1.03);
+  box-shadow: 0 6px 16px hsl(25 72% 20% / 0.3);
+  outline: 2px solid hsl(32 78% 55% / 0.9);
+  outline-offset: 2px;
+}
 .pf-item-img-empty {
   background: linear-gradient(135deg, #e8d5c0, #c9a87c);
 }
@@ -298,9 +333,24 @@
   background:
     linear-gradient(135deg, #6b3410 0%, #8b4513 50%, #6b3410 100%) !important;
   border: none !important;
+  overflow: visible !important;
+  -webkit-backface-visibility: visible !important;
+  backface-visibility: visible !important;
+  transform-style: preserve-3d !important;
+  -webkit-transform-style: preserve-3d !important;
   box-shadow:
     inset 0 0 60px rgba(0,0,0,0.4),
     inset 0 0 20px rgba(255,200,100,0.05) !important;
+}
+.pf-cover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(90deg, hsl(24 75% 10% / 0.72), hsl(35 60% 70% / 0.16), transparent);
 }
 .pf-cover.--left {
   box-shadow:
@@ -308,12 +358,14 @@
     inset -2px 0 0 rgba(255,200,100,0.15) !important;
   border-right: 2px solid rgba(0,0,0,0.4) !important;
 }
+.pf-cover.--left::before { right: -7px; transform: rotateY(180deg); }
 .pf-cover.--right {
   box-shadow:
     inset -20px 0 40px rgba(0,0,0,0.5),
     inset 2px 0 0 rgba(255,200,100,0.15) !important;
   border-left: 2px solid rgba(0,0,0,0.4) !important;
 }
+.pf-cover.--right::before { left: -7px; }
 
 /* Table of Contents page */
 .pf-toc {
@@ -356,6 +408,85 @@
 .pf-toc-page {
   font-weight: 700; color: #8b4513; font-size: 13px;
   font-family: 'Georgia', serif;
+}
+
+/* Item image detail dialog */
+.fb-item-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: hsl(210 29% 10% / 0.72);
+}
+.fb-item-modal-card {
+  position: relative;
+  width: min(92vw, 520px);
+  max-height: 86vh;
+  overflow: hidden auto;
+  background: hsl(40 58% 96%);
+  color: hsl(22 52% 13%);
+  border-radius: 8px;
+  box-shadow: 0 22px 70px hsl(0 0% 0% / 0.45);
+}
+.fb-item-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  color: hsl(0 0% 100%);
+  background: hsl(0 0% 0% / 0.46);
+  cursor: pointer;
+}
+.fb-item-modal-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+.fb-item-modal-body { padding: 18px 20px 20px; }
+.fb-item-modal-body h2 {
+  margin: 0 44px 8px 0;
+  font-size: 24px;
+  line-height: 1.15;
+  color: hsl(22 57% 12%);
+}
+.fb-item-modal-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: hsl(23 24% 36%);
+}
+.fb-item-modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+}
+.fb-item-modal-row span {
+  font-size: 18px;
+  font-weight: 800;
+  color: hsl(25 72% 31%);
+}
+.fb-item-modal-row button {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 800;
+  color: hsl(0 0% 100%);
+  background: linear-gradient(135deg, hsl(23 64% 46%), hsl(25 72% 31%));
+  box-shadow: 0 6px 16px hsl(25 72% 20% / 0.28);
+  cursor: pointer;
 }
 
 /* Soft-cover fallback used on small screens to avoid the
