@@ -303,6 +303,27 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
           Next →
         </button>
       </div>
+
+      {selectedItem && (
+        <div className="fb-item-modal" role="dialog" aria-modal="true" aria-label={`${selectedItem.name} details`} onClick={() => setSelectedItem(null)}>
+          <div className="fb-item-modal-card" onClick={(event) => event.stopPropagation()}>
+            <button className="fb-item-modal-close" onClick={() => setSelectedItem(null)} aria-label="Close item details">
+              <X style={{ width: 18, height: 18 }} />
+            </button>
+            {safeImgUrl(selectedItem.image_url) && (
+              <img className="fb-item-modal-img" src={safeImgUrl(selectedItem.image_url) ?? ''} alt={selectedItem.name} />
+            )}
+            <div className="fb-item-modal-body">
+              <h2>{selectedItem.name}</h2>
+              <p>{selectedItem.description || 'No description available.'}</p>
+              <div className="fb-item-modal-row">
+                <span>TZS {selectedItem.price.toLocaleString()}</span>
+                <button onClick={() => addToCart(selectedItem)}>+ Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
