@@ -235,7 +235,8 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showAddItem, setShowAddItem] = useState<string | null>(null);
   const [newCatName, setNewCatName] = useState('');
-  const [newItem, setNewItem] = useState({ name: '', price: '', description: '' });
+  const [newItem, setNewItem] = useState({ name: '', price: '', description: '', image_url: '' });
+  const [uploading, setUploading] = useState(false);
 
   const { data: categories } = useQuery({
     queryKey: ['admin-menu', restaurantId],
@@ -256,6 +257,30 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
       }));
     },
   });
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please choose an image file', variant: 'destructive' });
+      return null;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Max size is 5 MB', variant: 'destructive' });
+      return null;
+    }
+    setUploading(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${restaurantId}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('menu-images').upload(path, file, {
+      cacheControl: '3600', upsert: false,
+    });
+    setUploading(false);
+    if (error) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      return null;
+    }
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const addCategory = async () => {
     if (!newCatName.trim()) return;
@@ -278,15 +303,28 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
       name: newItem.name,
       price: parseFloat(newItem.price),
       description: newItem.description || null,
+      image_url: newItem.image_url || null,
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return;
     }
-    setNewItem({ name: '', price: '', description: '' });
+    setNewItem({ name: '', price: '', description: '', image_url: '' });
     setShowAddItem(null);
     queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
     toast({ title: 'Item added' });
+  };
+
+  const updateItemImage = async (itemId: string, file: File) => {
+    const url = await uploadImage(file);
+    if (!url) return;
+    const { error } = await supabase.from('menu_items').update({ image_url: url }).eq('id', itemId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
+    toast({ title: 'Image updated' });
   };
 
   const deleteItem = async (id: string) => {
@@ -354,21 +392,84 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
               <Input placeholder="Item name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="rounded-xl font-body" />
               <Input placeholder="Price (TZS)" type="number" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className="rounded-xl font-body" />
               <Input placeholder="Description (optional)" value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="rounded-xl font-body" />
+
+              {/* Image: upload OR paste URL */}
+              <div className="space-y-2 p-2 bg-background/50 rounded-lg border border-border">
+                <p className="text-xs font-body font-medium text-muted-foreground">Item image (optional)</p>
+                <div className="flex items-center gap-2">
+                  {newItem.image_url ? (
+                    <img src={newItem.image_url} alt="" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs font-body">
+                      No image
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <label className="block">
+                      <span className="sr-only">Upload image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploading}
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const url = await uploadImage(f);
+                          if (url) setNewItem(p => ({ ...p, image_url: url }));
+                          e.target.value = '';
+                        }}
+                        className="block w-full text-xs font-body file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary file:text-primary-foreground hover:file:opacity-90 file:cursor-pointer"
+                      />
+                    </label>
+                    <Input
+                      placeholder="…or paste image URL"
+                      value={newItem.image_url}
+                      onChange={e => setNewItem({ ...newItem, image_url: e.target.value })}
+                      className="rounded-lg font-body text-xs h-8"
+                    />
+                  </div>
+                </div>
+                {uploading && <p className="text-xs text-muted-foreground font-body">Uploading…</p>}
+              </div>
+
               <div className="flex gap-2">
-                <Button variant="hero" size="sm" onClick={() => addItem(cat.id)}>Add Item</Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowAddItem(null)}>Cancel</Button>
+                <Button variant="hero" size="sm" disabled={uploading} onClick={() => addItem(cat.id)}>Add Item</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setShowAddItem(null); setNewItem({ name: '', price: '', description: '', image_url: '' }); }}>Cancel</Button>
               </div>
             </div>
           )}
 
           <div className="space-y-2">
             {cat.items.map(item => (
-              <div key={item.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div>
-                  <p className="font-body font-medium text-sm">{item.name}</p>
-                  <p className="text-xs text-muted-foreground font-body">TZS {Number(item.price).toLocaleString()}</p>
+              <div key={item.id} className="flex items-center justify-between py-2 border-b border-border last:border-0 gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-border flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-muted flex-shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-body font-medium text-sm truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground font-body">TZS {Number(item.price).toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <label className="cursor-pointer">
+                    <span className="text-xs font-body text-primary hover:underline">
+                      {item.image_url ? 'Change' : 'Add image'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) updateItemImage(item.id, f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                   <Badge variant={item.is_available ? 'default' : 'secondary'} className={item.is_available ? 'bg-accent text-accent-foreground' : ''}>
                     {item.is_available ? 'Available' : 'Hidden'}
                   </Badge>
