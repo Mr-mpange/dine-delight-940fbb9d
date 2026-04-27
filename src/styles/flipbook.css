@@ -156,6 +156,7 @@
 .pf-menu {
   display: flex;
   flex-direction: column;
+  background-color: #fdfaf5;
 }
 
 /* Hero image strip */
