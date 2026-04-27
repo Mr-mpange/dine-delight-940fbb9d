@@ -22,6 +22,18 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   const pfRef = useRef<PageFlip | null>(null);
   const [pageNum, setPageNum] = useState(0);
   const [total, setTotal] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+
+  // Re-init the book when we cross the mobile/desktop breakpoint so the
+  // single-page-cover fallback applies cleanly on small screens.
+  useEffect(() => {
+    const onResize = () => {
+      const next = window.innerWidth < 768;
+      setIsMobile(prev => (prev !== next ? next : prev));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Build page data
   type Page =
