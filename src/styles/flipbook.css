@@ -40,14 +40,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   position: relative;
 }
 
+/* The book wrapper sized so PageFlip's width-driven layout never
+   exceeds available height. Two pages of 350x500 → aspect 1.4:1
+   (width:height). We cap by both width and height so the book
+   always fits on screen at any zoom level. */
 .fb-stage > div {
   width: 100%;
   height: 100%;
-  max-width: 1000px;
+  max-width: min(1100px, calc((100vh - 160px) * 1.4));
+  max-height: min(100%, calc(100vw / 1.4));
+  aspect-ratio: 1.4 / 1;
+}
+
+/* Single-page (mobile/portrait) — aspect ratio is 0.7:1 instead */
+@media (max-width: 767px) {
+  .fb-stage > div {
+    max-width: min(100%, calc((100vh - 160px) * 0.7));
+    max-height: min(100%, calc(100vw / 0.7));
+    aspect-ratio: 0.7 / 1;
+  }
 }
 
 .stf__parent {
