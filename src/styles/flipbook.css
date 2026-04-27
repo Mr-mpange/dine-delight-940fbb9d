@@ -79,7 +79,9 @@
     that PageFlip moves into its own DOM)
 ══════════════════════════════════════ */
 
-/* Base page — warm parchment with subtle paper texture */
+/* Base page — warm parchment with subtle paper texture.
+   IMPORTANT: backface-visibility:hidden + opaque background prevents the
+   "next page bleeding through at 90°" artifact during the 3D flip. */
 .pf-page {
   background-color: #fdfaf5;
   background-image:
@@ -91,6 +93,18 @@
   font-family: 'Georgia', serif;
   box-sizing: border-box;
   border: 1px solid rgba(139, 69, 19, 0.15);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* page-flip wraps each page in .stf__item — that's what actually rotates.
+   Force its backface hidden too so the back of a turning page is opaque. */
+.stf__item,
+.stf__block {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Cover */
@@ -142,6 +156,7 @@
 .pf-menu {
   display: flex;
   flex-direction: column;
+  background-color: #fdfaf5;
 }
 
 /* Hero image strip */
@@ -305,6 +320,7 @@
   display: flex;
   flex-direction: column;
   padding: 28px 32px;
+  background-color: #fdfaf5;
 }
 .pf-toc-header { text-align: center; margin-bottom: 18px; }
 .pf-toc-header h2 {
