@@ -205,7 +205,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     });
 
     // Detect mobile — use portrait (single-page) so the book fills the screen
-    const isMobile = window.innerWidth < 768;
+    // (uses the reactive isMobile state so the book re-inits on resize)
 
     // On small screens, soft covers + showCover:false avoids the
     // "detached cover" artifact during open/close in portrait mode.
