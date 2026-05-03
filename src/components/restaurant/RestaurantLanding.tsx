@@ -129,27 +129,31 @@ export default function RestaurantLanding({ restaurant }: RestaurantLandingProps
         >
           <h2 className="text-xl font-heading font-semibold mb-4">Popular Dishes</h2>
           <div className="grid grid-cols-3 gap-3">
-            {previewFoods.map((food, i) => (
+            {showcase.map((food, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
-                className="rounded-xl overflow-hidden shadow-warm group cursor-pointer"
+                className="rounded-xl overflow-hidden shadow-warm group cursor-pointer bg-muted"
               >
                 <div className="relative aspect-square overflow-hidden">
-                  <img
-                    src={food.img}
-                    alt={food.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    loading="lazy"
-                    width={640}
-                    height={640}
-                  />
+                  {food.image_url ? (
+                    <img
+                      src={food.image_url}
+                      alt={food.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                      width={640}
+                      height={640}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-3xl">🍽️</div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
                   <div className="absolute bottom-2 left-2 right-2">
                     <p className="text-background text-xs font-semibold font-body truncate">{food.name}</p>
-                    <p className="text-background/80 text-[10px] font-body">{food.price}</p>
+                    <p className="text-background/80 text-[10px] font-body">TZS {food.price.toLocaleString()}</p>
                   </div>
                 </div>
               </motion.div>
