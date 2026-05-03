@@ -66,6 +66,7 @@ export default function RestaurantDashboard() {
     { id: 'menu' as Tab, label: 'Menu', icon: UtensilsCrossed },
     { id: 'qr' as Tab, label: 'QR Code', icon: QrCode },
     { id: 'stats' as Tab, label: 'Stats', icon: BarChart3 },
+    { id: 'settings' as Tab, label: 'Settings', icon: Settings },
   ];
 
   return (
