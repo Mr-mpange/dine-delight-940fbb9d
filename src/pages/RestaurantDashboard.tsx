@@ -113,6 +113,7 @@ export default function RestaurantDashboard() {
           />
         )}
         {activeTab === 'stats' && <StatsPanel restaurantId={restaurant.id} />}
+        {activeTab === 'settings' && <SettingsPanel restaurant={restaurant} />}
       </div>
     </div>
   );
