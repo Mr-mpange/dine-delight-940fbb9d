@@ -9,12 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode, Store, MapPin,
+  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode, Store, MapPin, Settings,
 } from 'lucide-react';
 import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'orders' | 'menu' | 'qr' | 'stats';
+type Tab = 'orders' | 'menu' | 'qr' | 'stats' | 'settings';
 
 export default function RestaurantDashboard() {
   const { user, signOut, userRole, loading } = useAuth();
