@@ -120,6 +120,12 @@ export default function QRCodeCard({ restaurantName, slug, logoUrl, address, pho
               fgColor="#1a1a1a"
               level="H"
               includeMargin={false}
+              imageSettings={logoUrl ? {
+                src: logoUrl,
+                height: 36,
+                width: 36,
+                excavate: true,
+              } : undefined}
             />
           </div>
           <div className="scan-text" style={{ fontSize: 13, fontWeight: 600, color: '#E8682A', marginTop: 12, marginBottom: 4 }}>
