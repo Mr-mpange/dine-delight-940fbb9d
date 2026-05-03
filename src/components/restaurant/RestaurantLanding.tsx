@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { MapPin, Clock, Phone, MessageCircle, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import heroFood from '@/assets/hero-food.jpg';
 import food1 from '@/assets/food-1.jpg';
 import food2 from '@/assets/food-2.jpg';
@@ -22,10 +24,10 @@ interface RestaurantLandingProps {
   };
 }
 
-const previewFoods = [
-  { img: food1, name: 'Grilled Chicken', price: 'TZS 12,000' },
-  { img: food2, name: 'Fresh Juice', price: 'TZS 5,000' },
-  { img: food3, name: 'Beef Stew', price: 'TZS 15,000' },
+const fallbackFoods = [
+  { image_url: food1, name: 'Grilled Chicken', price: 12000 },
+  { image_url: food2, name: 'Fresh Juice', price: 5000 },
+  { image_url: food3, name: 'Beef Stew', price: 15000 },
 ];
 
 export default function RestaurantLanding({ restaurant }: RestaurantLandingProps) {
