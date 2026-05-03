@@ -31,6 +31,22 @@ const fallbackFoods = [
 ];
 
 export default function RestaurantLanding({ restaurant }: RestaurantLandingProps) {
+  const { data: popularItems } = useQuery({
+    queryKey: ['popular-items', restaurant.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('menu_items')
+        .select('id, name, price, image_url')
+        .eq('restaurant_id', restaurant.id)
+        .eq('is_available', true)
+        .order('sort_order', { ascending: true })
+        .limit(3);
+      return data ?? [];
+    },
+  });
+  const showcase = (popularItems && popularItems.length > 0)
+    ? popularItems.map(i => ({ image_url: i.image_url, name: i.name, price: Number(i.price) }))
+    : fallbackFoods;
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
