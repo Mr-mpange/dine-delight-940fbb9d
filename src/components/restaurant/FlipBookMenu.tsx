@@ -253,7 +253,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       swipeDistance: 30,
         showPageCorners: false,
         disableFlipByClick: true,
-      showCover: !isMobile,
+      showCover: false,
       usePortrait: isMobile,
       mobileScrollSupport: false,
       autoSize: true,
