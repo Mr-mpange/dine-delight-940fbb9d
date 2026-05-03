@@ -44,21 +44,24 @@
   position: relative;
 }
 
-/* Book wrapper — bounded by both viewport height and width so the
-   nav (prev/next) is always visible at any zoom level. */
+/* Book wrapper — centered, sized to fit viewport height with comfortable
+   padding so the entire book (cover spread + nav) is always visible. */
 .fb-stage > div {
-  width: 100%;
+  width: auto !important;
   height: 100%;
-  max-width: min(100%, calc((100vh - 160px) * 1.4));
-  max-height: min(100%, calc(100vw / 1.4));
+  /* Two pages side-by-side, ~1.4:1 ratio. Cap width so book is centered
+     instead of stretching across the whole stage at 100% zoom. */
+  max-height: 100%;
+  aspect-ratio: 1.4 / 1;
+  max-width: min(95vw, calc((100vh - 160px) * 1.4));
   margin: 0 auto;
 }
 
 /* Single-page (mobile/portrait) — book is taller than wide (~0.7:1) */
 @media (max-width: 767px) {
   .fb-stage > div {
-    max-width: min(100%, calc((100vh - 150px) * 0.7));
-    max-height: 100%;
+    aspect-ratio: 0.7 / 1;
+    max-width: min(95vw, calc((100vh - 150px) * 0.7));
   }
 }
 
