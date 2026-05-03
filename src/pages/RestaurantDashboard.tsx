@@ -9,12 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode, Store, MapPin,
+  LogOut, Plus, Trash2, Clock, CheckCircle, QrCode, Store, MapPin, Settings,
 } from 'lucide-react';
 import QRCodeCard from '@/components/restaurant/QRCodeCard';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'orders' | 'menu' | 'qr' | 'stats';
+type Tab = 'orders' | 'menu' | 'qr' | 'stats' | 'settings';
 
 export default function RestaurantDashboard() {
   const { user, signOut, userRole, loading } = useAuth();
@@ -66,6 +66,7 @@ export default function RestaurantDashboard() {
     { id: 'menu' as Tab, label: 'Menu', icon: UtensilsCrossed },
     { id: 'qr' as Tab, label: 'QR Code', icon: QrCode },
     { id: 'stats' as Tab, label: 'Stats', icon: BarChart3 },
+    { id: 'settings' as Tab, label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -112,6 +113,7 @@ export default function RestaurantDashboard() {
           />
         )}
         {activeTab === 'stats' && <StatsPanel restaurantId={restaurant.id} />}
+        {activeTab === 'settings' && <SettingsPanel restaurant={restaurant} />}
       </div>
     </div>
   );
@@ -530,6 +532,176 @@ function StatsPanel({ restaurantId }: { restaurantId: string }) {
             <p className="text-sm text-muted-foreground font-body">{stat.label}</p>
           </motion.div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel({ restaurant }: { restaurant: any }) {
+  const [form, setForm] = useState({
+    name: restaurant.name || '',
+    description: restaurant.description || '',
+    phone: restaurant.phone || '',
+    whatsapp: restaurant.whatsapp || '',
+    address: restaurant.address || '',
+    logo_url: restaurant.logo_url || '',
+    cover_image_url: restaurant.cover_image_url || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const uploadImage = async (file: File, kind: 'logo' | 'cover') => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please select an image.', variant: 'destructive' });
+      return null;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Too large', description: 'Image must be under 5MB.', variant: 'destructive' });
+      return null;
+    }
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${restaurant.id}/${kind}-${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('menu-images').upload(path, file);
+    if (error) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      return null;
+    }
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('restaurants')
+      .update({
+        name: form.name,
+        description: form.description || null,
+        phone: form.phone || null,
+        whatsapp: form.whatsapp || null,
+        address: form.address || null,
+        logo_url: form.logo_url || null,
+        cover_image_url: form.cover_image_url || null,
+      })
+      .eq('id', restaurant.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Settings saved' });
+    queryClient.invalidateQueries({ queryKey: ['my-restaurant'] });
+    queryClient.invalidateQueries({ queryKey: ['restaurant'] });
+  };
+
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <div>
+        <h2 className="font-heading font-semibold text-lg">Restaurant Settings</h2>
+        <p className="text-sm text-muted-foreground font-body">
+          Update your restaurant details. Changes appear on your public page and QR menu instantly.
+        </p>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+        <div>
+          <label className="text-sm font-body font-medium mb-1 block">Restaurant Name</label>
+          <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+        </div>
+
+        <div>
+          <label className="text-sm font-body font-medium mb-1 block">Description</label>
+          <textarea
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+            placeholder="Tell customers about your restaurant..."
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-body font-medium mb-1 block">Phone</label>
+            <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+255 ..." />
+          </div>
+          <div>
+            <label className="text-sm font-body font-medium mb-1 block">WhatsApp</label>
+            <Input value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} placeholder="+255 ..." />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-body font-medium mb-1 block">Address / Location</label>
+          <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label className="text-sm font-body font-medium mb-1 block">Logo</label>
+            <div className="flex items-center gap-3">
+              {form.logo_url ? (
+                <img src={form.logo_url} alt="logo" className="w-16 h-16 rounded-lg object-cover border" />
+              ) : (
+                <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">No logo</div>
+              )}
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingLogo(true);
+                    const url = await uploadImage(file, 'logo');
+                    setUploadingLogo(false);
+                    if (url) setForm(f => ({ ...f, logo_url: url }));
+                  }}
+                />
+                <span className="text-xs px-3 py-2 rounded-md border border-input bg-background hover:bg-accent inline-block">
+                  {uploadingLogo ? 'Uploading...' : 'Upload'}
+                </span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-body font-medium mb-1 block">Cover Image</label>
+            <div className="flex items-center gap-3">
+              {form.cover_image_url ? (
+                <img src={form.cover_image_url} alt="cover" className="w-24 h-16 rounded-lg object-cover border" />
+              ) : (
+                <div className="w-24 h-16 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">No cover</div>
+              )}
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingCover(true);
+                    const url = await uploadImage(file, 'cover');
+                    setUploadingCover(false);
+                    if (url) setForm(f => ({ ...f, cover_image_url: url }));
+                  }}
+                />
+                <span className="text-xs px-3 py-2 rounded-md border border-input bg-background hover:bg-accent inline-block">
+                  {uploadingCover ? 'Uploading...' : 'Upload'}
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <Button variant="hero" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </div>
     </div>
   );
