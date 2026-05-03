@@ -44,22 +44,21 @@
   position: relative;
 }
 
-/* Book wrapper — pure height/width caps. PageFlip with size:'stretch'
-   + autoSize handles the 1.4:1 (or 0.7:1 portrait) scaling internally,
-   so we just constrain the available box and let it stretch. Using
-   aspect-ratio here was making the wrapper smaller than the viewport
-   at 100% zoom on desktop. */
+/* Book wrapper — bounded by both viewport height and width so the
+   nav (prev/next) is always visible at any zoom level. */
 .fb-stage > div {
   width: 100%;
   height: 100%;
-  max-width: min(100%, calc((100vh - 140px) * 1.4));
+  max-width: min(100%, calc((100vh - 160px) * 1.4));
+  max-height: min(100%, calc(100vw / 1.4));
   margin: 0 auto;
 }
 
 /* Single-page (mobile/portrait) — book is taller than wide (~0.7:1) */
 @media (max-width: 767px) {
   .fb-stage > div {
-    max-width: min(100%, calc((100vh - 130px) * 0.7));
+    max-width: min(100%, calc((100vh - 150px) * 0.7));
+    max-height: 100%;
   }
 }
 
