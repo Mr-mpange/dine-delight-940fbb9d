@@ -302,6 +302,7 @@ export type Database = {
           opening_hours: Json | null
           owner_id: string | null
           phone: string | null
+          qr_background_url: string | null
           slug: string
           updated_at: string | null
           whatsapp: string | null
@@ -319,6 +320,7 @@ export type Database = {
           opening_hours?: Json | null
           owner_id?: string | null
           phone?: string | null
+          qr_background_url?: string | null
           slug: string
           updated_at?: string | null
           whatsapp?: string | null
@@ -336,6 +338,7 @@ export type Database = {
           opening_hours?: Json | null
           owner_id?: string | null
           phone?: string | null
+          qr_background_url?: string | null
           slug?: string
           updated_at?: string | null
           whatsapp?: string | null
