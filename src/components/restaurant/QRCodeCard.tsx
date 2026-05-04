@@ -1,18 +1,27 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
-import { Printer, Download, QrCode } from 'lucide-react';
+import { Printer, Download, QrCode, ImagePlus, Loader2, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface QRCodeCardProps {
+  restaurantId?: string;
   restaurantName: string;
   slug: string;
   logoUrl?: string | null;
   address?: string | null;
   phone?: string | null;
+  backgroundUrl?: string | null;
 }
 
-export default function QRCodeCard({ restaurantName, slug, logoUrl, address, phone }: QRCodeCardProps) {
+export default function QRCodeCard({ restaurantId, restaurantName, slug, logoUrl, address, phone, backgroundUrl }: QRCodeCardProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const menuUrl = `${window.location.origin}${import.meta.env.BASE_URL}r/${slug}/menu`;
 
