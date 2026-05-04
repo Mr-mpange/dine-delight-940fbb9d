@@ -1,18 +1,27 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
-import { Printer, Download, QrCode } from 'lucide-react';
+import { Printer, Download, QrCode, ImagePlus, Loader2, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface QRCodeCardProps {
+  restaurantId?: string;
   restaurantName: string;
   slug: string;
   logoUrl?: string | null;
   address?: string | null;
   phone?: string | null;
+  backgroundUrl?: string | null;
 }
 
-export default function QRCodeCard({ restaurantName, slug, logoUrl, address, phone }: QRCodeCardProps) {
+export default function QRCodeCard({ restaurantId, restaurantName, slug, logoUrl, address, phone, backgroundUrl }: QRCodeCardProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const menuUrl = `${window.location.origin}${import.meta.env.BASE_URL}r/${slug}/menu`;
 
@@ -116,19 +125,41 @@ export default function QRCodeCard({ restaurantName, slug, logoUrl, address, pho
         <div
           className="card"
           style={{
+            position: 'relative',
             width: 300,
             padding: '32px 24px',
             textAlign: 'center',
             border: '2px solid hsl(var(--primary))',
             borderRadius: 16,
-            background: 'white',
+            background: backgroundUrl
+              ? `linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)), url(${backgroundUrl}) center/cover no-repeat`
+              : 'white',
             boxShadow: '0 20px 40px -12px rgba(232, 104, 42, 0.25)',
+            overflow: 'hidden',
           }}
         >
-          <div className="restaurant-name" style={{ fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 4 }}>
+          <div
+            className="restaurant-name"
+            style={{
+              fontSize: 20,
+              fontWeight: 'bold',
+              color: '#1a1a1a',
+              marginBottom: 4,
+              textShadow: backgroundUrl ? '0 1px 2px rgba(255,255,255,0.8)' : undefined,
+            }}
+          >
             {restaurantName}
           </div>
-          <div className="tagline" style={{ fontSize: 11, color: '#888', fontStyle: 'italic', marginBottom: 16 }}>
+          <div
+            className="tagline"
+            style={{
+              fontSize: 11,
+              color: backgroundUrl ? '#444' : '#888',
+              fontStyle: 'italic',
+              marginBottom: 16,
+              textShadow: backgroundUrl ? '0 1px 2px rgba(255,255,255,0.8)' : undefined,
+            }}
+          >
             Digital Menu
           </div>
           <div
@@ -139,6 +170,7 @@ export default function QRCodeCard({ restaurantName, slug, logoUrl, address, pho
               background: 'white',
               border: '1px solid #eee',
               borderRadius: 12,
+              boxShadow: backgroundUrl ? '0 4px 12px rgba(0,0,0,0.15)' : undefined,
             }}
           >
             <QRCodeSVG
@@ -155,18 +187,109 @@ export default function QRCodeCard({ restaurantName, slug, logoUrl, address, pho
               }
             />
           </div>
-          <div className="scan-text" style={{ fontSize: 13, fontWeight: 600, color: '#E8682A', marginTop: 12, marginBottom: 4 }}>
+          <div
+            className="scan-text"
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#E8682A',
+              marginTop: 12,
+              marginBottom: 4,
+              textShadow: backgroundUrl ? '0 1px 2px rgba(255,255,255,0.8)' : undefined,
+            }}
+          >
             Scan to View Menu
           </div>
           {(address || phone) && (
             <div className="details" style={{ marginTop: 12 }}>
               <div className="divider" style={{ width: 40, height: 2, background: '#E8682A', margin: '8px auto', opacity: 0.3 }} />
-              {address && <div style={{ fontSize: 10, color: '#666' }}>{address}</div>}
-              {phone && <div style={{ fontSize: 10, color: '#666' }}>{phone}</div>}
+              {address && <div style={{ fontSize: 10, color: backgroundUrl ? '#333' : '#666' }}>{address}</div>}
+              {phone && <div style={{ fontSize: 10, color: backgroundUrl ? '#333' : '#666' }}>{phone}</div>}
             </div>
           )}
         </div>
       </div>
+
+      {/* Background upload (admin only) */}
+      {restaurantId && (
+        <div className="relative flex flex-col items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file || !restaurantId) return;
+              setUploading(true);
+              try {
+                const ext = file.name.split('.').pop() || 'jpg';
+                const path = `${restaurantId}/qr-bg-${Date.now()}.${ext}`;
+                const { error: upErr } = await supabase.storage
+                  .from('menu-images')
+                  .upload(path, file, { upsert: true, contentType: file.type });
+                if (upErr) throw upErr;
+                const { data: pub } = supabase.storage.from('menu-images').getPublicUrl(path);
+                const { error: updErr } = await supabase
+                  .from('restaurants')
+                  .update({ qr_background_url: pub.publicUrl })
+                  .eq('id', restaurantId);
+                if (updErr) throw updErr;
+                toast({ title: 'Background updated', description: 'Your QR card now uses the new image.' });
+                queryClient.invalidateQueries({ queryKey: ['my-restaurant'] });
+                queryClient.invalidateQueries({ queryKey: ['restaurant'] });
+              } catch (err) {
+                toast({
+                  title: 'Upload failed',
+                  description: err instanceof Error ? err.message : 'Try a smaller image.',
+                  variant: 'destructive',
+                });
+              } finally {
+                setUploading(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }
+            }}
+          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-1" />}
+              {backgroundUrl ? 'Change Background' : 'Upload Background'}
+            </Button>
+            {backgroundUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                disabled={uploading}
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from('restaurants')
+                    .update({ qr_background_url: null })
+                    .eq('id', restaurantId);
+                  if (error) {
+                    toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                  } else {
+                    toast({ title: 'Background removed' });
+                    queryClient.invalidateQueries({ queryKey: ['my-restaurant'] });
+                    queryClient.invalidateQueries({ queryKey: ['restaurant'] });
+                  }
+                }}
+              >
+                <X className="w-4 h-4 mr-1" /> Remove
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground font-body">
+            Upload a custom background image for the QR card.
+          </p>
+        </div>
+      )}
 
       <div className="relative flex gap-2 justify-center">
         <Button variant="hero" size="sm" onClick={handlePrint} className="rounded-full">

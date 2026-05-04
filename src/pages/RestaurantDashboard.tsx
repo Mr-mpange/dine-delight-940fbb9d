@@ -105,11 +105,13 @@ export default function RestaurantDashboard() {
         {activeTab === 'menu' && <MenuPanel restaurantId={restaurant.id} />}
         {activeTab === 'qr' && (
           <QRCodeCard
+            restaurantId={restaurant.id}
             restaurantName={restaurant.name}
             slug={restaurant.slug}
             logoUrl={restaurant.logo_url}
             address={restaurant.address}
             phone={restaurant.phone}
+            backgroundUrl={(restaurant as { qr_background_url?: string | null }).qr_background_url ?? null}
           />
         )}
         {activeTab === 'stats' && <StatsPanel restaurantId={restaurant.id} />}
