@@ -28,9 +28,6 @@ export default function Index() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/20 text-primary-foreground text-sm font-body font-medium mb-6 backdrop-blur-sm border border-primary/30">
-              🍽️ Digital Restaurant Platform
-            </span>
             <h1 className="text-4xl md:text-6xl font-heading font-bold text-background leading-tight mb-6">
               Transform Your
               <br />
