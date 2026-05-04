@@ -94,9 +94,6 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
         </motion.div>
         <h2 className="text-xl font-heading font-semibold mt-6">Placing Order...</h2>
         <p className="text-muted-foreground font-body mt-2">Hang tight, almost done</p>
-        <span className="mt-4 inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full border border-yellow-300">
-          🧪 Demo Mode — no real payment is charged
-        </span>
       </div>
     );
   }
