@@ -19,7 +19,6 @@ const paymentMethods = [
   { id: 'mpesa', name: 'M-Pesa', icon: '📱' },
   { id: 'airtel', name: 'Airtel Money', icon: '📲' },
   { id: 'tigo', name: 'Tigo Pesa', icon: '💳' },
-  { id: 'demo', name: 'Demo (No Payment)', icon: '🧪' },
 ];
 
 export default function CheckoutPage({ restaurantId, restaurantSlug, commissionRate }: CheckoutPageProps) {
@@ -142,9 +141,6 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
     <div className="min-h-screen bg-background">
       <div className="px-4 py-4 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <h2 className="text-xl font-heading font-semibold">Checkout</h2>
-        <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5 mt-2 font-body">
-          🧪 Demo Mode — no real payment will be processed
-        </p>
       </div>
 
       <div className="p-4 space-y-6 max-w-md mx-auto">
