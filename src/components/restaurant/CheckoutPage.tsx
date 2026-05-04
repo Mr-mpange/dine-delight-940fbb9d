@@ -205,25 +205,10 @@ export default function CheckoutPage({ restaurantId, restaurantSlug, commissionR
           </div>
         </motion.div>
 
-        {/* Order Summary */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl p-4 border border-border space-y-2">
-          <h3 className="font-heading font-semibold mb-3">Order Summary</h3>
-          {state.items.map(item => (
-            <div key={item.id} className="flex justify-between text-sm font-body">
-              <span>{item.name} × {item.quantity}</span>
-              <span>TZS {(item.price * item.quantity).toLocaleString()}</span>
-            </div>
-          ))}
-          <div className="border-t border-border pt-2 mt-2 flex justify-between font-body font-bold">
-            <span>Total</span>
-            <span className="text-primary">TZS {totalPrice.toLocaleString()}</span>
-          </div>
-        </motion.div>
-
         <Button variant="hero" size="lg" className="w-full rounded-xl py-6 text-lg" onClick={handleSubmit}>
           {paymentMethod === 'cash'
             ? `💵 Place Order (Pay Cash) — TZS ${totalPrice.toLocaleString()}`
-            : `🧪 Place Demo Order — TZS ${totalPrice.toLocaleString()}`}
+            : `Place Order — TZS ${totalPrice.toLocaleString()}`}
         </Button>
       </div>
     </div>
