@@ -79,7 +79,11 @@ export default function SuperAdminDashboard() {
 
 function RestaurantsPanel() {
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', slug: '', description: '', phone: '', address: '' });
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    name: '', slug: '', description: '', phone: '', address: '',
+    admin_email: '', admin_password: '', admin_full_name: '',
+  });
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -92,22 +96,39 @@ function RestaurantsPanel() {
   });
 
   const createRestaurant = async () => {
-    if (!form.name.trim() || !form.slug.trim()) return;
-    const { error } = await supabase.from('restaurants').insert({
-      name: form.name,
-      slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-      description: form.description || null,
-      phone: form.phone || null,
-      address: form.address || null,
-    });
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (!form.name.trim() || !form.slug.trim() || !form.admin_email.trim() || !form.admin_password.trim()) {
+      toast({ title: 'Missing fields', description: 'Name, slug, admin email & password are required', variant: 'destructive' });
       return;
     }
-    setForm({ name: '', slug: '', description: '', phone: '', address: '' });
+    if (form.admin_password.length < 6) {
+      toast({ title: 'Weak password', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+    setCreating(true);
+    const { data, error } = await supabase.functions.invoke('create-restaurant-admin', {
+      body: {
+        email: form.admin_email,
+        password: form.admin_password,
+        full_name: form.admin_full_name || form.name,
+        restaurant: {
+          name: form.name,
+          slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+          description: form.description || undefined,
+          phone: form.phone || undefined,
+          address: form.address || undefined,
+        },
+      },
+    });
+    setCreating(false);
+    if (error || (data as { error?: string })?.error) {
+      const msg = (data as { error?: string })?.error || error?.message || 'Failed';
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
+      return;
+    }
+    setForm({ name: '', slug: '', description: '', phone: '', address: '', admin_email: '', admin_password: '', admin_full_name: '' });
     setShowAdd(false);
     queryClient.invalidateQueries({ queryKey: ['all-restaurants'] });
-    toast({ title: 'Restaurant created!' });
+    toast({ title: 'Restaurant & admin created!', description: `Login: ${form.admin_email}` });
   };
 
   const deleteRestaurant = async (id: string) => {
@@ -128,14 +149,23 @@ function RestaurantsPanel() {
       {showAdd && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-xl p-4 border border-border space-y-3">
+          <p className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wide">Restaurant Details</p>
           <Input placeholder="Restaurant Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl font-body" />
           <Input placeholder="URL Slug (e.g., pizza-palace)" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} className="rounded-xl font-body" />
           <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="rounded-xl font-body" />
           <Input placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="rounded-xl font-body" />
           <Input placeholder="Address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="rounded-xl font-body" />
+
+          <p className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wide pt-2">Admin Login (the owner will use these to sign in)</p>
+          <Input placeholder="Admin Full Name" value={form.admin_full_name} onChange={e => setForm({ ...form, admin_full_name: e.target.value })} className="rounded-xl font-body" />
+          <Input type="email" placeholder="Admin Email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} className="rounded-xl font-body" />
+          <Input type="text" placeholder="Admin Password (min 6 chars)" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} className="rounded-xl font-body" />
+
           <div className="flex gap-2">
-            <Button variant="hero" onClick={createRestaurant}>Create</Button>
-            <Button variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button variant="hero" onClick={createRestaurant} disabled={creating}>
+              {creating ? 'Creating…' : 'Create Restaurant + Admin'}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowAdd(false)} disabled={creating}>Cancel</Button>
           </div>
         </motion.div>
       )}
