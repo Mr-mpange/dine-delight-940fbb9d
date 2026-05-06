@@ -70,8 +70,10 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   });
   pages.push({ type: 'toc', entries: tocEntries });
   pages.push(...itemPages);
-  // Ensure even total page count so the back hard cover lands on the right side
-  if (pages.length % 2 !== 0) {
+  // With showCover:true, both covers are single pages and the content
+  // between them must be EVEN so pairs land correctly. Content count =
+  // 1 (toc) + itemPages.length (+ optional filler). Pad when that is odd.
+  if ((1 + itemPages.length) % 2 !== 0) {
     pages.push({ type: 'items', category: '', items: [] });
   }
   pages.push({ type: 'back' });
