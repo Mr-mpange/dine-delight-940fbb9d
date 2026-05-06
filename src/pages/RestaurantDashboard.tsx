@@ -32,6 +32,28 @@ export default function RestaurantDashboard() {
     }
   }, [user, userRole, loading, navigate]);
 
+  // Restaurant admins must have an APPROVED KYC application before accessing the dashboard.
+  const { data: kyc, isLoading: kycLoading } = useQuery({
+    queryKey: ['my-kyc-status', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('kyc_applications')
+        .select('status')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user && userRole === 'restaurant_admin',
+  });
+
+  useEffect(() => {
+    if (!loading && !kycLoading && user && userRole === 'restaurant_admin' && kyc?.status !== 'approved') {
+      navigate('/apply', { replace: true });
+    }
+  }, [loading, kycLoading, user, userRole, kyc, navigate]);
+
   const { data: restaurant, isLoading: restaurantLoading } = useQuery({
     queryKey: ['my-restaurant', user?.id],
     queryFn: async () => {
@@ -42,10 +64,10 @@ export default function RestaurantDashboard() {
         .single();
       return data;
     },
-    enabled: !!user && userRole === 'restaurant_admin',
+    enabled: !!user && userRole === 'restaurant_admin' && kyc?.status === 'approved',
   });
 
-  if (loading || !user || restaurantLoading) {
+  if (loading || !user || kycLoading || restaurantLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground font-body">Loading dashboard...</p>
