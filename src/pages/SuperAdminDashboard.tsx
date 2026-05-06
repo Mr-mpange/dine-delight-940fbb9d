@@ -223,24 +223,68 @@ function PlatformAnalytics() {
 }
 
 function UsersPanel() {
-  const { data: roles } = useQuery({
+  const { data: users, isLoading } = useQuery({
     queryKey: ['user-roles-admin'],
     queryFn: async () => {
-      const { data } = await supabase.from('user_roles').select('*');
-      return data || [];
+      const [{ data: roles }, { data: profiles }] = await Promise.all([
+        supabase.from('user_roles').select('*').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*'),
+      ]);
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+      return (roles || []).map(r => ({
+        ...r,
+        profile: profileMap.get(r.user_id) || null,
+      }));
     },
   });
 
+  const roleColors: Record<string, string> = {
+    super_admin: 'bg-primary/10 text-primary border-primary/20',
+    restaurant_admin: 'bg-warm-gold/10 text-warm-gold border-warm-gold/20',
+    customer: 'bg-muted text-muted-foreground border-border',
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="font-heading font-semibold text-lg">Users & Roles</h2>
-      {roles?.map(role => (
-        <div key={role.id} className="bg-card rounded-xl p-3 border border-border flex items-center justify-between">
-          <span className="font-body text-sm truncate">{role.user_id}</span>
-          <Badge className="bg-primary/10 text-primary border-primary/20">{role.role}</Badge>
+      <h2 className="font-heading font-semibold text-lg">Users & Roles ({users?.length || 0})</h2>
+
+      {isLoading && <p className="text-center text-muted-foreground font-body py-8">Loading users…</p>}
+
+      {users && users.length > 0 && (
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm font-body">
+            <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="text-left px-4 py-3">Name</th>
+                <th className="text-left px-4 py-3 hidden sm:table-cell">Phone</th>
+                <th className="text-left px-4 py-3">Role</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, i) => (
+                <tr key={u.id} className={i % 2 === 0 ? 'bg-background' : 'bg-card'}>
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{u.profile?.full_name || 'Unnamed user'}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[180px]">{u.user_id}</p>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">
+                    {u.profile?.phone || '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={roleColors[u.role] || roleColors.customer}>{u.role}</Badge>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
-      {(!roles || roles.length === 0) && (
+      )}
+
+      {!isLoading && (!users || users.length === 0) && (
         <p className="text-center text-muted-foreground font-body py-8">No users found</p>
       )}
     </div>
