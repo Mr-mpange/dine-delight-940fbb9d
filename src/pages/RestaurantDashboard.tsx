@@ -45,10 +45,18 @@ export default function RestaurantDashboard() {
     enabled: !!user && userRole === 'restaurant_admin',
   });
 
-  if (loading || restaurantLoading) {
+  if (loading || !user || restaurantLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground font-body">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (userRole !== 'restaurant_admin') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground font-body">Redirecting...</p>
       </div>
     );
   }
