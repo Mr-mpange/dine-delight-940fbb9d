@@ -123,10 +123,8 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
           inner.appendChild(coverFace('front', restaurantName, 'Our Menu', 'Drag corners to turn pages', safeCover));
           inner.appendChild(coverFace('back', restaurantName, 'Inside Cover'));
         } else {
-          // Back hard cover: the FRONT face (visible when flipping from last page)
-          // is the inside back; the BACK face (outside) is the closing "Thank You".
-          inner.appendChild(coverFace('front', restaurantName, 'Inside Back Cover'));
-          inner.appendChild(coverFace('back', 'Thank You', restaurantName, 'See you again soon', safeCover));
+          inner.appendChild(coverFace('front', 'Thank You', restaurantName, 'See you again soon', safeCover));
+          inner.appendChild(coverFace('back', restaurantName, 'Back Cover'));
         }
         div.appendChild(inner);
       } else if (page.type === 'toc') {
