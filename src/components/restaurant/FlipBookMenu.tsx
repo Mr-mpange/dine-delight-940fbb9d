@@ -70,8 +70,10 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
   });
   pages.push({ type: 'toc', entries: tocEntries });
   pages.push(...itemPages);
-  // Ensure even total page count so the back hard cover lands on the right side
-  if (pages.length % 2 !== 0) {
+  // With showCover:true, both covers are single pages and the content
+  // between them must be EVEN so pairs land correctly. Content count =
+  // 1 (toc) + itemPages.length (+ optional filler). Pad when that is odd.
+  if ((1 + itemPages.length) % 2 !== 0) {
     pages.push({ type: 'items', category: '', items: [] });
   }
   pages.push({ type: 'back' });
@@ -121,10 +123,8 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
           inner.appendChild(coverFace('front', restaurantName, 'Our Menu', 'Drag corners to turn pages', safeCover));
           inner.appendChild(coverFace('back', restaurantName, 'Inside Cover'));
         } else {
-          // Back hard cover: the FRONT face (visible when flipping from last page)
-          // is the inside back; the BACK face (outside) is the closing "Thank You".
-          inner.appendChild(coverFace('front', restaurantName, 'Inside Back Cover'));
-          inner.appendChild(coverFace('back', 'Thank You', restaurantName, 'See you again soon', safeCover));
+          inner.appendChild(coverFace('front', 'Thank You', restaurantName, 'See you again soon', safeCover));
+          inner.appendChild(coverFace('back', restaurantName, 'Back Cover'));
         }
         div.appendChild(inner);
       } else if (page.type === 'toc') {
