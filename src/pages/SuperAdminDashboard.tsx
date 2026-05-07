@@ -23,9 +23,6 @@ export default function SuperAdminDashboard() {
   const [newRestaurant, setNewRestaurant] = useState({ name: '', slug: '', description: '', phone: '', address: '' });
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const publicOrigin = window.location.hostname.includes('id-preview--')
-    ? 'https://bite-book-beacon.lovable.app'
-    : window.location.origin;
   const navigate = useNavigate();
 
   if (!user || userRole !== 'super_admin') {
