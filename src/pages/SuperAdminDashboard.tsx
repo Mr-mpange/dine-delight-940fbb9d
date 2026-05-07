@@ -97,6 +97,9 @@ function RestaurantsPanel() {
   });
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const publicOrigin = window.location.hostname.includes('id-preview--')
+    ? 'https://bite-book-beacon.lovable.app'
+    : window.location.origin;
 
   const { data: restaurants } = useQuery({
     queryKey: ['all-restaurants'],
