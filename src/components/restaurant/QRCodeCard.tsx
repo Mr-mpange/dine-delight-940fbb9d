@@ -23,7 +23,10 @@ export default function QRCodeCard({ restaurantId, restaurantName, slug, logoUrl
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const menuUrl = `${window.location.origin}${import.meta.env.BASE_URL}r/${slug}/menu`;
+  const publicOrigin = window.location.hostname.includes('id-preview--')
+    ? 'https://bite-book-beacon.lovable.app'
+    : window.location.origin;
+  const menuUrl = `${publicOrigin}/r/${slug}/menu`;
 
   const handlePrint = () => {
     const content = printRef.current;
