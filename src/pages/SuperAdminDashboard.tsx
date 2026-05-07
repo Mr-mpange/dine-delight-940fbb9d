@@ -23,6 +23,9 @@ export default function SuperAdminDashboard() {
   const [newRestaurant, setNewRestaurant] = useState({ name: '', slug: '', description: '', phone: '', address: '' });
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const publicOrigin = window.location.hostname.includes('id-preview--')
+    ? 'https://bite-book-beacon.lovable.app'
+    : window.location.origin;
   const navigate = useNavigate();
 
   if (!user || userRole !== 'super_admin') {
@@ -242,7 +245,7 @@ function RestaurantsPanel() {
               <p className="text-xs uppercase text-muted-foreground font-body font-semibold">Admin Credentials</p>
               <p className="font-body flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /> {receipt.adminEmail}</p>
               <p className="font-body flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> {receipt.adminPassword}</p>
-              <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(`Restaurant: ${receipt.restaurantName}\nAdmin: ${receipt.adminName}\nEmail: ${receipt.adminEmail}\nPassword: ${receipt.adminPassword}\nMenu: ${window.location.origin}/r/${receipt.slug}/menu`)}>
+              <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(`Restaurant: ${receipt.restaurantName}\nAdmin: ${receipt.adminName}\nEmail: ${receipt.adminEmail}\nPassword: ${receipt.adminPassword}\nMenu: ${publicOrigin}/r/${receipt.slug}/menu`)}>
                 <Copy className="w-4 h-4 mr-1" /> Copy Receipt
               </Button>
             </div>
