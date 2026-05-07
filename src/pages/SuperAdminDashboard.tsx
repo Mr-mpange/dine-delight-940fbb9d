@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
-  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink, FileCheck, CheckCircle, XCircle,
+  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink, FileCheck, CheckCircle, XCircle, Copy, KeyRound, Mail,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
@@ -79,13 +79,24 @@ export default function SuperAdminDashboard() {
 
 function RestaurantsPanel() {
   const [showAdd, setShowAdd] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [receipt, setReceipt] = useState<null | {
+    restaurantName: string;
+    slug: string;
+    adminName: string;
+    adminEmail: string;
+    adminPassword: string;
+  }>(null);
   const [form, setForm] = useState({
     name: '', slug: '', description: '', phone: '', address: '',
     admin_email: '', admin_password: '', admin_full_name: '',
   });
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const publicOrigin = window.location.hostname.includes('id-preview--')
+    ? 'https://bite-book-beacon.lovable.app'
+    : window.location.origin;
 
   const { data: restaurants } = useQuery({
     queryKey: ['all-restaurants'],
@@ -95,24 +106,46 @@ function RestaurantsPanel() {
     },
   });
 
-  const createRestaurant = async () => {
-    if (!form.name.trim() || !form.slug.trim() || !form.admin_email.trim() || !form.admin_password.trim()) {
-      toast({ title: 'Missing fields', description: 'Name, slug, admin email & password are required', variant: 'destructive' });
-      return;
+  const cleanSlug = form.slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+  const validateProvisioningForm = () => {
+    if (!form.name.trim() || !cleanSlug || !form.admin_full_name.trim() || !form.admin_email.trim() || !form.admin_password.trim()) {
+      toast({ title: 'Missing fields', description: 'Restaurant name, slug, admin name, email, and password are required', variant: 'destructive' });
+      return false;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.admin_email.trim())) {
+      toast({ title: 'Invalid email', description: 'Enter a valid admin email address', variant: 'destructive' });
+      return false;
     }
     if (form.admin_password.length < 6) {
       toast({ title: 'Weak password', description: 'Password must be at least 6 characters', variant: 'destructive' });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const startConfirmation = () => {
+    if (validateProvisioningForm()) setConfirming(true);
+  };
+
+  const createRestaurant = async () => {
+    if (!validateProvisioningForm()) return;
+    const provisioned = {
+      restaurantName: form.name.trim(),
+      slug: cleanSlug,
+      adminName: form.admin_full_name.trim(),
+      adminEmail: form.admin_email.trim(),
+      adminPassword: form.admin_password,
+    };
     setCreating(true);
     const { data, error } = await supabase.functions.invoke('create-restaurant-admin', {
       body: {
-        email: form.admin_email,
+        email: provisioned.adminEmail,
         password: form.admin_password,
-        full_name: form.admin_full_name || form.name,
+        full_name: provisioned.adminName,
         restaurant: {
-          name: form.name,
-          slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+          name: provisioned.restaurantName,
+          slug: provisioned.slug,
           description: form.description || undefined,
           phone: form.phone || undefined,
           address: form.address || undefined,
@@ -127,8 +160,10 @@ function RestaurantsPanel() {
     }
     setForm({ name: '', slug: '', description: '', phone: '', address: '', admin_email: '', admin_password: '', admin_full_name: '' });
     setShowAdd(false);
+    setConfirming(false);
+    setReceipt(provisioned);
     queryClient.invalidateQueries({ queryKey: ['all-restaurants'] });
-    toast({ title: 'Restaurant & admin created!', description: `Login: ${form.admin_email}` });
+    toast({ title: 'Restaurant & admin created!', description: `Login: ${provisioned.adminEmail}` });
   };
 
   const deleteRestaurant = async (id: string) => {
@@ -161,11 +196,59 @@ function RestaurantsPanel() {
           <Input type="email" placeholder="Admin Email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} className="rounded-xl font-body" />
           <Input type="text" placeholder="Admin Password (min 6 chars)" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} className="rounded-xl font-body" />
 
+          {confirming && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-body font-semibold">Confirm restaurant admin provisioning</p>
+                  <p className="text-sm text-muted-foreground font-body">This will create a login account and a restaurant owned by that admin.</p>
+                </div>
+              </div>
+              <div className="grid gap-2 text-sm font-body md:grid-cols-2">
+                <p><span className="text-muted-foreground">Restaurant:</span> {form.name}</p>
+                <p><span className="text-muted-foreground">URL:</span> /r/{cleanSlug}</p>
+                <p><span className="text-muted-foreground">Admin:</span> {form.admin_full_name}</p>
+                <p><span className="text-muted-foreground">Email:</span> {form.admin_email}</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button variant="hero" onClick={createRestaurant} disabled={creating}>
-              {creating ? 'Creating…' : 'Create Restaurant + Admin'}
+            <Button variant="hero" onClick={confirming ? createRestaurant : startConfirmation} disabled={creating}>
+              {creating ? 'Creating…' : confirming ? 'Confirm & Create' : 'Review & Create'}
             </Button>
-            <Button variant="ghost" onClick={() => setShowAdd(false)} disabled={creating}>Cancel</Button>
+            <Button variant="ghost" onClick={() => confirming ? setConfirming(false) : setShowAdd(false)} disabled={creating}>Cancel</Button>
+          </div>
+        </motion.div>
+      )}
+
+      {receipt && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-accent/10 rounded-xl p-4 border border-accent/20 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-6 h-6 text-accent mt-0.5" />
+              <div>
+                <h3 className="font-heading font-semibold">Provisioning successful</h3>
+                <p className="text-sm text-muted-foreground font-body">Share this receipt with the restaurant owner securely.</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setReceipt(null)}>Dismiss</Button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl bg-background border border-border p-3">
+              <p className="text-xs uppercase text-muted-foreground font-body font-semibold">Restaurant</p>
+              <p className="font-body font-semibold">{receipt.restaurantName}</p>
+              <p className="text-sm text-primary font-body">/r/{receipt.slug}</p>
+            </div>
+            <div className="rounded-xl bg-background border border-border p-3 space-y-2">
+              <p className="text-xs uppercase text-muted-foreground font-body font-semibold">Admin Credentials</p>
+              <p className="font-body flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /> {receipt.adminEmail}</p>
+              <p className="font-body flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> {receipt.adminPassword}</p>
+              <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(`Restaurant: ${receipt.restaurantName}\nAdmin: ${receipt.adminName}\nEmail: ${receipt.adminEmail}\nPassword: ${receipt.adminPassword}\nMenu: ${publicOrigin}/r/${receipt.slug}/menu`)}>
+                <Copy className="w-4 h-4 mr-1" /> Copy Receipt
+              </Button>
+            </div>
           </div>
         </motion.div>
       )}
