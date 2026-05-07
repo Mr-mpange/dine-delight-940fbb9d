@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
-  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink, FileCheck, CheckCircle, XCircle,
+  Shield, Store, Users, BarChart3, Plus, LogOut, Trash2, ExternalLink, FileCheck, CheckCircle, XCircle, Copy, KeyRound, Mail,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
@@ -79,7 +79,15 @@ export default function SuperAdminDashboard() {
 
 function RestaurantsPanel() {
   const [showAdd, setShowAdd] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [receipt, setReceipt] = useState<null | {
+    restaurantName: string;
+    slug: string;
+    adminName: string;
+    adminEmail: string;
+    adminPassword: string;
+  }>(null);
   const [form, setForm] = useState({
     name: '', slug: '', description: '', phone: '', address: '',
     admin_email: '', admin_password: '', admin_full_name: '',
@@ -95,24 +103,46 @@ function RestaurantsPanel() {
     },
   });
 
-  const createRestaurant = async () => {
-    if (!form.name.trim() || !form.slug.trim() || !form.admin_email.trim() || !form.admin_password.trim()) {
-      toast({ title: 'Missing fields', description: 'Name, slug, admin email & password are required', variant: 'destructive' });
-      return;
+  const cleanSlug = form.slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+  const validateProvisioningForm = () => {
+    if (!form.name.trim() || !cleanSlug || !form.admin_full_name.trim() || !form.admin_email.trim() || !form.admin_password.trim()) {
+      toast({ title: 'Missing fields', description: 'Restaurant name, slug, admin name, email, and password are required', variant: 'destructive' });
+      return false;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.admin_email.trim())) {
+      toast({ title: 'Invalid email', description: 'Enter a valid admin email address', variant: 'destructive' });
+      return false;
     }
     if (form.admin_password.length < 6) {
       toast({ title: 'Weak password', description: 'Password must be at least 6 characters', variant: 'destructive' });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const startConfirmation = () => {
+    if (validateProvisioningForm()) setConfirming(true);
+  };
+
+  const createRestaurant = async () => {
+    if (!validateProvisioningForm()) return;
+    const provisioned = {
+      restaurantName: form.name.trim(),
+      slug: cleanSlug,
+      adminName: form.admin_full_name.trim(),
+      adminEmail: form.admin_email.trim(),
+      adminPassword: form.admin_password,
+    };
     setCreating(true);
     const { data, error } = await supabase.functions.invoke('create-restaurant-admin', {
       body: {
-        email: form.admin_email,
+        email: provisioned.adminEmail,
         password: form.admin_password,
-        full_name: form.admin_full_name || form.name,
+        full_name: provisioned.adminName,
         restaurant: {
-          name: form.name,
-          slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+          name: provisioned.restaurantName,
+          slug: provisioned.slug,
           description: form.description || undefined,
           phone: form.phone || undefined,
           address: form.address || undefined,
@@ -127,8 +157,10 @@ function RestaurantsPanel() {
     }
     setForm({ name: '', slug: '', description: '', phone: '', address: '', admin_email: '', admin_password: '', admin_full_name: '' });
     setShowAdd(false);
+    setConfirming(false);
+    setReceipt(provisioned);
     queryClient.invalidateQueries({ queryKey: ['all-restaurants'] });
-    toast({ title: 'Restaurant & admin created!', description: `Login: ${form.admin_email}` });
+    toast({ title: 'Restaurant & admin created!', description: `Login: ${provisioned.adminEmail}` });
   };
 
   const deleteRestaurant = async (id: string) => {
