@@ -193,11 +193,59 @@ function RestaurantsPanel() {
           <Input type="email" placeholder="Admin Email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} className="rounded-xl font-body" />
           <Input type="text" placeholder="Admin Password (min 6 chars)" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} className="rounded-xl font-body" />
 
+          {confirming && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-body font-semibold">Confirm restaurant admin provisioning</p>
+                  <p className="text-sm text-muted-foreground font-body">This will create a login account and a restaurant owned by that admin.</p>
+                </div>
+              </div>
+              <div className="grid gap-2 text-sm font-body md:grid-cols-2">
+                <p><span className="text-muted-foreground">Restaurant:</span> {form.name}</p>
+                <p><span className="text-muted-foreground">URL:</span> /r/{cleanSlug}</p>
+                <p><span className="text-muted-foreground">Admin:</span> {form.admin_full_name}</p>
+                <p><span className="text-muted-foreground">Email:</span> {form.admin_email}</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button variant="hero" onClick={createRestaurant} disabled={creating}>
-              {creating ? 'Creating…' : 'Create Restaurant + Admin'}
+            <Button variant="hero" onClick={confirming ? createRestaurant : startConfirmation} disabled={creating}>
+              {creating ? 'Creating…' : confirming ? 'Confirm & Create' : 'Review & Create'}
             </Button>
-            <Button variant="ghost" onClick={() => setShowAdd(false)} disabled={creating}>Cancel</Button>
+            <Button variant="ghost" onClick={() => confirming ? setConfirming(false) : setShowAdd(false)} disabled={creating}>Cancel</Button>
+          </div>
+        </motion.div>
+      )}
+
+      {receipt && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-accent/10 rounded-xl p-4 border border-accent/20 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-6 h-6 text-accent mt-0.5" />
+              <div>
+                <h3 className="font-heading font-semibold">Provisioning successful</h3>
+                <p className="text-sm text-muted-foreground font-body">Share this receipt with the restaurant owner securely.</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setReceipt(null)}>Dismiss</Button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl bg-background border border-border p-3">
+              <p className="text-xs uppercase text-muted-foreground font-body font-semibold">Restaurant</p>
+              <p className="font-body font-semibold">{receipt.restaurantName}</p>
+              <p className="text-sm text-primary font-body">/r/{receipt.slug}</p>
+            </div>
+            <div className="rounded-xl bg-background border border-border p-3 space-y-2">
+              <p className="text-xs uppercase text-muted-foreground font-body font-semibold">Admin Credentials</p>
+              <p className="font-body flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /> {receipt.adminEmail}</p>
+              <p className="font-body flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> {receipt.adminPassword}</p>
+              <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(`Restaurant: ${receipt.restaurantName}\nAdmin: ${receipt.adminName}\nEmail: ${receipt.adminEmail}\nPassword: ${receipt.adminPassword}\nMenu: ${window.location.origin}/r/${receipt.slug}/menu`)}>
+                <Copy className="w-4 h-4 mr-1" /> Copy Receipt
+              </Button>
+            </div>
           </div>
         </motion.div>
       )}
