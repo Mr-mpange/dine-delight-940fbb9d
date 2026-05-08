@@ -19,11 +19,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const loadUserRole = useCallback(async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (error) {
+      setUserRole(null);
+      console.error('Could not load user role', error);
+      return;
+    }
 
     setUserRole(data?.role ?? 'customer');
   }, []);

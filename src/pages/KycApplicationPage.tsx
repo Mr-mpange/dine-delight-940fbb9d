@@ -23,7 +23,7 @@ function validateDocument(file: File) {
 }
 
 export default function KycApplicationPage() {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, userRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
@@ -48,11 +48,22 @@ export default function KycApplicationPage() {
         .order('created_at', { ascending: false })
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!user && userRole !== 'super_admin',
   });
 
   const latestApp = applications?.[0] ?? null;
   const shouldShowForm = !latestApp || (latestApp.status === 'rejected' && showResubmitForm);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth', { replace: true });
+      return;
+    }
+
+    if (!loading && userRole === 'super_admin') {
+      navigate('/super-admin', { replace: true });
+    }
+  }, [loading, navigate, user, userRole]);
 
   useEffect(() => {
     if (latestApp?.status === 'rejected') {
@@ -108,8 +119,7 @@ export default function KycApplicationPage() {
     );
   }
 
-  if (!user) {
-    navigate('/auth');
+  if (!user || userRole === 'super_admin') {
     return null;
   }
 
