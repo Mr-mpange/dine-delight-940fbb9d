@@ -27,7 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       setUserRole(null);
-      throw error;
+      console.error('Could not load user role', error);
+      return;
     }
 
     setUserRole(data?.role ?? 'customer');
