@@ -9,7 +9,7 @@ interface MenuItem {
   id: string; name: string; description: string | null;
   price: number; image_url: string | null; is_available: boolean;
 }
-interface MenuCategory { id: string; name: string; items: MenuItem[]; }
+interface MenuCategory { id: string; name: string; items: MenuItem[]; background_image_url?: string | null; }
 interface FlipBookMenuProps {
   categories: MenuCategory[]; restaurantName: string; coverImageUrl?: string | null;
 }
@@ -50,7 +50,7 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     | { type: 'cover' }
     | { type: 'back' }
     | { type: 'toc'; entries: { category: string; page: number }[] }
-    | { type: 'items'; category: string; items: MenuItem[] };
+    | { type: 'items'; category: string; items: MenuItem[]; backgroundUrl?: string | null };
   const pages: Page[] = [];
   pages.push({ type: 'cover' });
 
@@ -64,15 +64,12 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
     if (items.length === 0) return;
     tocEntries.push({ category: cat.name, page: currentPageNum });
     for (let i = 0; i < items.length; i += 2) {
-      itemPages.push({ type: 'items', category: cat.name, items: items.slice(i, i + 2) });
+      itemPages.push({ type: 'items', category: cat.name, items: items.slice(i, i + 2), backgroundUrl: cat.background_image_url ?? null });
       currentPageNum++;
     }
   });
   pages.push({ type: 'toc', entries: tocEntries });
   pages.push(...itemPages);
-  // With showCover:true, both covers are single pages and the content
-  // between them must be EVEN so pairs land correctly. Content count =
-  // 1 (toc) + itemPages.length (+ optional filler). Pad when that is odd.
   if ((1 + itemPages.length) % 2 !== 0) {
     pages.push({ type: 'items', category: '', items: [] });
   }
@@ -155,6 +152,15 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
         div.appendChild(tocList);
       } else {
         div.className = 'pf-page pf-menu';
+
+        // Category background image (per-category)
+        const bgUrl = safeImgUrl(page.backgroundUrl);
+        if (bgUrl) {
+          div.classList.add('pf-menu-has-bg');
+          div.style.backgroundImage = `linear-gradient(rgba(255,250,245,0.82), rgba(255,250,245,0.92)), url("${bgUrl}")`;
+          div.style.backgroundSize = 'cover';
+          div.style.backgroundPosition = 'center';
+        }
 
         // Hero
         const heroImgUrl = safeImgUrl(page.items.find(i => i.image_url)?.image_url);

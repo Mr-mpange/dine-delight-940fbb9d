@@ -361,6 +361,28 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
     toast({ title: 'Image updated' });
   };
 
+  const updateCategoryBackground = async (categoryId: string, file: File) => {
+    const url = await uploadImage(file);
+    if (!url) return;
+    const { error } = await supabase.from('menu_categories').update({ background_image_url: url } as never).eq('id', categoryId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
+    toast({ title: 'Category background updated' });
+  };
+
+  const removeCategoryBackground = async (categoryId: string) => {
+    const { error } = await supabase.from('menu_categories').update({ background_image_url: null } as never).eq('id', categoryId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
+    toast({ title: 'Background removed' });
+  };
+
   const deleteItem = async (id: string) => {
     await supabase.from('menu_items').delete().eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
@@ -407,7 +429,9 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
         </div>
       )}
 
-      {categories?.map(cat => (
+      {categories?.map(cat => {
+        const catBg = (cat as { background_image_url?: string | null }).background_image_url ?? null;
+        return (
         <div key={cat.id} className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-heading font-semibold">{cat.name}</h3>
@@ -420,6 +444,43 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
               </Button>
             </div>
           </div>
+
+          {/* Category background image */}
+          <div className="mb-3 flex items-center gap-3 p-2 rounded-lg bg-background/50 border border-border">
+            {catBg ? (
+              <img src={catBg} alt="" className="w-14 h-14 rounded-lg object-cover border border-border flex-shrink-0" />
+            ) : (
+              <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center text-[10px] font-body text-muted-foreground text-center px-1 flex-shrink-0">
+                No background
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-body font-medium">Page background image</p>
+              <p className="text-[11px] text-muted-foreground font-body">Shown behind this category's pages in the menu.</p>
+            </div>
+            <div className="flex flex-col gap-1 flex-shrink-0">
+              <label className="cursor-pointer">
+                <span className="text-xs font-body text-primary hover:underline">{catBg ? 'Change' : 'Upload'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) updateCategoryBackground(cat.id, f);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {catBg && (
+                <button type="button" onClick={() => removeCategoryBackground(cat.id)} className="text-[11px] font-body text-destructive hover:underline text-left">
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+
 
           {showAddItem === cat.id && (
             <div className="mb-3 space-y-2 p-3 bg-secondary/30 rounded-lg">
@@ -518,7 +579,8 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
