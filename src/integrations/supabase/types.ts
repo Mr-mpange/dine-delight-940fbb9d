@@ -70,6 +70,7 @@ export type Database = {
       }
       menu_categories: {
         Row: {
+          background_image_url: string | null
           created_at: string | null
           id: string
           name: string
@@ -77,6 +78,7 @@ export type Database = {
           sort_order: number | null
         }
         Insert: {
+          background_image_url?: string | null
           created_at?: string | null
           id?: string
           name: string
@@ -84,6 +86,7 @@ export type Database = {
           sort_order?: number | null
         }
         Update: {
+          background_image_url?: string | null
           created_at?: string | null
           id?: string
           name?: string
