@@ -153,6 +153,15 @@ export default function FlipBookMenu({ categories, restaurantName, coverImageUrl
       } else {
         div.className = 'pf-page pf-menu';
 
+        // Category background image (per-category)
+        const bgUrl = safeImgUrl(page.backgroundUrl);
+        if (bgUrl) {
+          div.classList.add('pf-menu-has-bg');
+          div.style.backgroundImage = `linear-gradient(rgba(255,250,245,0.82), rgba(255,250,245,0.92)), url("${bgUrl}")`;
+          div.style.backgroundSize = 'cover';
+          div.style.backgroundPosition = 'center';
+        }
+
         // Hero
         const heroImgUrl = safeImgUrl(page.items.find(i => i.image_url)?.image_url);
         if (heroImgUrl) {
