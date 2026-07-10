@@ -361,6 +361,28 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
     toast({ title: 'Image updated' });
   };
 
+  const updateCategoryBackground = async (categoryId: string, file: File) => {
+    const url = await uploadImage(file);
+    if (!url) return;
+    const { error } = await supabase.from('menu_categories').update({ background_image_url: url } as never).eq('id', categoryId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
+    toast({ title: 'Category background updated' });
+  };
+
+  const removeCategoryBackground = async (categoryId: string) => {
+    const { error } = await supabase.from('menu_categories').update({ background_image_url: null } as never).eq('id', categoryId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
+    toast({ title: 'Background removed' });
+  };
+
   const deleteItem = async (id: string) => {
     await supabase.from('menu_items').delete().eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['admin-menu', restaurantId] });
