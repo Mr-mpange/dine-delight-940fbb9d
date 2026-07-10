@@ -1,13 +1,8 @@
 import { motion } from 'framer-motion';
-import { MapPin, Clock, Phone, MessageCircle, ChevronRight } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ChevronRight, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import heroFood from '@/assets/hero-food.jpg';
-import food1 from '@/assets/food-1.jpg';
-import food2 from '@/assets/food-2.jpg';
-import food3 from '@/assets/food-3.jpg';
 
 interface RestaurantLandingProps {
   restaurant: {
@@ -24,162 +19,106 @@ interface RestaurantLandingProps {
   };
 }
 
-const fallbackFoods = [
-  { image_url: food1, name: 'Grilled Chicken', price: 12000 },
-  { image_url: food2, name: 'Fresh Juice', price: 5000 },
-  { image_url: food3, name: 'Beef Stew', price: 15000 },
-];
-
 export default function RestaurantLanding({ restaurant }: RestaurantLandingProps) {
-  const { data: popularItems } = useQuery({
-    queryKey: ['popular-items', restaurant.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('menu_items')
-        .select('id, name, price, image_url')
-        .eq('restaurant_id', restaurant.id)
-        .eq('is_available', true)
-        .order('sort_order', { ascending: true })
-        .limit(3);
-      return data ?? [];
-    },
-  });
-  const showcase = (popularItems && popularItems.length > 0)
-    ? popularItems.map(i => ({ image_url: i.image_url, name: i.name, price: Number(i.price) }))
-    : fallbackFoods;
+  const publicOrigin = typeof window !== 'undefined' && window.location.hostname.includes('id-preview--')
+    ? 'https://bite-book-beacon.lovable.app'
+    : (typeof window !== 'undefined' ? window.location.origin : '');
+  const menuUrl = `${publicOrigin}/r/${restaurant.slug}/menu`;
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
-        <img
-          src={restaurant.cover_image_url || heroFood}
-          alt={restaurant.name}
-          className="absolute inset-0 w-full h-full object-cover"
-          width={1920}
-          height={1080}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md bg-card rounded-3xl shadow-warm-lg border border-border overflow-hidden"
+      >
+        {/* Compact hero */}
+        <div className="relative h-40 overflow-hidden">
+          {restaurant.cover_image_url ? (
+            <img
+              src={restaurant.cover_image_url}
+              alt={restaurant.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-warm" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/30 to-transparent" />
+          <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3">
             {restaurant.logo_url && (
               <img
                 src={restaurant.logo_url}
                 alt=""
-                className="w-16 h-16 rounded-xl mb-4 border-2 border-background/20 shadow-warm-lg"
-                loading="lazy"
-                width={64}
-                height={64}
+                className="w-14 h-14 rounded-xl border-2 border-background/30 shadow-warm object-cover"
               />
             )}
-            <h1 className="text-3xl md:text-5xl font-heading font-bold text-background mb-2">
+            <h1 className="text-2xl font-heading font-bold text-background drop-shadow">
               {restaurant.name}
             </h1>
-            {restaurant.description && (
-              <p className="text-background/80 text-base md:text-lg max-w-lg font-body">
-                {restaurant.description}
-              </p>
-            )}
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="px-6 md:px-10 py-8 space-y-6 max-w-2xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid gap-4"
-        >
-          {restaurant.address && (
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
-              <span className="font-body">{restaurant.address}</span>
-            </div>
-          )}
-          {restaurant.opening_hours && Object.keys(restaurant.opening_hours).length > 0 && (
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Clock className="w-5 h-5 text-primary flex-shrink-0" />
-              <span className="font-body">Open Now</span>
-            </div>
-          )}
-          {restaurant.phone && (
-            <a href={`tel:${restaurant.phone}`} className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
-              <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-              <span className="font-body">{restaurant.phone}</span>
-            </a>
-          )}
-          {restaurant.whatsapp && (
-            <a href={`https://wa.me/${restaurant.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
-              <MessageCircle className="w-5 h-5 text-accent flex-shrink-0" />
-              <span className="font-body">Chat on WhatsApp</span>
-            </a>
-          )}
-        </motion.div>
-
-        {/* Food Preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h2 className="text-xl font-heading font-semibold mb-4">Popular Dishes</h2>
-          <div className="grid grid-cols-3 gap-3">
-            {showcase.map((food, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                className="rounded-xl overflow-hidden shadow-warm group cursor-pointer bg-muted"
-              >
-                <div className="relative aspect-square overflow-hidden">
-                  {food.image_url ? (
-                    <img
-                      src={food.image_url}
-                      alt={food.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      loading="lazy"
-                      width={640}
-                      height={640}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-3xl">🍽️</div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <p className="text-background text-xs font-semibold font-body truncate">{food.name}</p>
-                    <p className="text-background/80 text-[10px] font-body">TZS {food.price.toLocaleString()}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="flex flex-col gap-3 pt-4"
-        >
-          <Button variant="hero" size="lg" className="w-full text-lg py-6 rounded-xl" asChild>
+        <div className="p-5 space-y-5">
+          {/* Description */}
+          {restaurant.description ? (
+            <p className="text-sm text-muted-foreground font-body leading-relaxed text-center">
+              {restaurant.description}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground font-body italic text-center">
+              Welcome — scan the QR code below to explore our menu.
+            </p>
+          )}
+
+          {/* QR */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="p-3 bg-white rounded-2xl border-2 border-primary/30 shadow-warm">
+              <QRCodeSVG
+                value={menuUrl}
+                size={168}
+                bgColor="white"
+                fgColor="#1a1a1a"
+                level="H"
+                includeMargin={false}
+                imageSettings={restaurant.logo_url ? { src: restaurant.logo_url, height: 34, width: 34, excavate: true } : undefined}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-primary">
+              <QrCode className="w-4 h-4" />
+              <span className="text-xs font-body font-semibold uppercase tracking-wide">Scan to view menu</span>
+            </div>
+          </div>
+
+          {/* Quick info */}
+          <div className="space-y-2 text-sm">
+            {restaurant.address && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="font-body truncate">{restaurant.address}</span>
+              </div>
+            )}
+            {restaurant.phone && (
+              <a href={`tel:${restaurant.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                <Phone className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="font-body">{restaurant.phone}</span>
+              </a>
+            )}
+            {restaurant.whatsapp && (
+              <a href={`https://wa.me/${restaurant.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors">
+                <MessageCircle className="w-4 h-4 text-accent flex-shrink-0" />
+                <span className="font-body">Chat on WhatsApp</span>
+              </a>
+            )}
+          </div>
+
+          <Button variant="hero" size="lg" className="w-full rounded-xl" asChild>
             <Link to={`/r/${restaurant.slug}/menu`}>
               Open Menu <ChevronRight className="w-5 h-5 ml-1" />
             </Link>
           </Button>
-          <Button variant="outline-warm" size="lg" className="w-full text-lg py-6 rounded-xl" asChild>
-            <Link to={`/r/${restaurant.slug}/menu`}>
-              Order Now
-            </Link>
-          </Button>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
