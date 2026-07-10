@@ -9,7 +9,7 @@ interface MenuItem {
   id: string; name: string; description: string | null;
   price: number; image_url: string | null; is_available: boolean;
 }
-interface MenuCategory { id: string; name: string; items: MenuItem[]; }
+interface MenuCategory { id: string; name: string; items: MenuItem[]; background_image_url?: string | null; }
 interface FlipBookMenuProps {
   categories: MenuCategory[]; restaurantName: string; coverImageUrl?: string | null;
 }
