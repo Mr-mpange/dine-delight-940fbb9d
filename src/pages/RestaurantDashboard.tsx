@@ -579,7 +579,8 @@ function MenuPanel({ restaurantId }: { restaurantId: string }) {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
